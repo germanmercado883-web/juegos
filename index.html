@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Duskvale — Battle Royale Demo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Teko:wght@500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/ui/styles.css" />
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+
+    <!-- ============ MAIN MENU ============ -->
+    <section id="menu" class="screen active">
+      <div class="menu-bg">
+        <svg class="menu-mountains" viewBox="0 0 1600 400" preserveAspectRatio="none" aria-hidden="true">
+          <polygon points="0,400 0,250 140,170 260,230 400,120 560,210 700,140 860,230 1000,110 1150,200 1290,150 1450,220 1600,160 1600,400" fill="#6f8a8a" opacity="0.55" />
+          <polygon points="0,400 0,300 180,240 320,290 470,220 640,300 820,230 980,300 1130,240 1300,310 1460,260 1600,290 1600,400" fill="#4e6a5c" opacity="0.8" />
+          <polygon points="0,400 0,340 220,310 420,350 600,320 800,355 1000,322 1200,350 1400,325 1600,345 1600,400" fill="#33493d" />
+        </svg>
+        <div class="menu-sun"></div>
+      </div>
+      <div class="menu-content">
+        <div class="logo">
+          <div class="logo-mark">◆</div>
+          <h1>DUSKVALE</h1>
+          <h2>BATTLE ROYALE DEMO</h2>
+        </div>
+        <div class="menu-buttons">
+          <button id="btn-play" class="btn btn-primary">PLAY</button>
+          <button id="btn-settings" class="btn">SETTINGS</button>
+        </div>
+        <div class="menu-foot">PROTOTYPE BUILD 0.1 · SOLO · 10 SURVIVORS</div>
+      </div>
+    </section>
+
+    <!-- ============ SETTINGS ============ -->
+    <section id="settings" class="screen overlay">
+      <div class="panel">
+        <h3>SETTINGS</h3>
+        <label class="row">MOUSE SENSITIVITY <input id="set-sens" type="range" min="0.3" max="2.5" step="0.05" /><span id="set-sens-v"></span></label>
+        <label class="row">MASTER VOLUME <input id="set-vol" type="range" min="0" max="1" step="0.05" /><span id="set-vol-v"></span></label>
+        <label class="row">GRAPHICS
+          <select id="set-quality">
+            <option value="high">HIGH (shadows)</option>
+            <option value="low">LOW (performance)</option>
+          </select><span></span>
+        </label>
+        <label class="row">INVERT Y <input id="set-invert" type="checkbox" /><span></span></label>
+        <button id="btn-settings-back" class="btn btn-primary">BACK</button>
+      </div>
+    </section>
+
+    <!-- ============ LOADING ============ -->
+    <section id="loading" class="screen">
+      <div class="loading-inner">
+        <div class="logo small"><h1>DUSKVALE</h1></div>
+        <div class="loading-label"><span id="loading-text">LOADING WORLD...</span><span id="loading-pct">0%</span></div>
+        <div class="loading-bar"><div id="loading-fill"></div></div>
+        <div class="loading-tip" id="loading-tip">TIP: Loot glows on the ground. Walk over it and press E.</div>
+      </div>
+    </section>
+
+    <!-- ============ HUD ============ -->
+    <section id="hud" class="hidden">
+      <div class="hud-top">
+        <div class="compass"><div class="compass-strip" id="compass-strip"></div><div class="compass-needle"></div></div>
+        <div class="hud-pills">
+          <div class="pill"><span class="pill-k">ALIVE:</span> <b id="hud-alive">10</b></div>
+          <div class="pill"><span class="pill-k">KILLS</span> <b id="hud-kills">0</b></div>
+          <div class="pill zone-pill" id="hud-zone"><span class="zone-dot"></span><span id="hud-zone-text">IN SAFE ZONE</span></div>
+        </div>
+      </div>
+
+      <div class="minimap"><canvas id="minimap" width="180" height="180"></canvas><div class="minimap-label">DUSKVALE VALLEY</div></div>
+
+      <div class="hud-left">
+        <div class="stat">
+          <div class="stat-icon">✚</div>
+          <div class="stat-body">
+            <div class="stat-head"><span>HEALTH</span><b id="hud-hp">100</b></div>
+            <div class="bar"><div class="bar-fill hp" id="hud-hp-bar"></div><div class="bar-ghost" id="hud-hp-ghost"></div></div>
+          </div>
+        </div>
+        <div class="stat">
+          <div class="stat-icon armor">⛨</div>
+          <div class="stat-body">
+            <div class="stat-head"><span>ARMOR</span><b id="hud-armor">0</b></div>
+            <div class="bar"><div class="bar-fill armor" id="hud-armor-bar"></div></div>
+          </div>
+        </div>
+        <div class="medkits"><span class="key">H</span> MEDKIT ×<b id="hud-medkits">1</b><span class="pack" id="hud-pack"></span></div>
+      </div>
+
+      <div class="hud-right">
+        <div class="slots"><span class="slot active" id="slot-1">1</span><span class="slot" id="slot-2">2</span></div>
+        <div class="weapon-card">
+          <div class="weapon-name" id="hud-weapon">RK-7 STRIDER</div>
+          <div class="weapon-kind" id="hud-weapon-kind">RIFLE</div>
+          <div class="ammo"><b id="hud-mag">30</b><span>/</span><em id="hud-reserve">60</em></div>
+          <div class="reload" id="hud-reload">RELOADING</div>
+        </div>
+      </div>
+
+      <div class="crosshair" id="crosshair"><i class="c-t"></i><i class="c-b"></i><i class="c-l"></i><i class="c-r"></i><i class="c-dot"></i></div>
+      <div class="hitmarker" id="hitmarker"><i></i><i></i><i></i><i></i></div>
+      <div class="dmg-dir" id="dmg-dir"></div>
+
+      <div class="kill-banner" id="kill-banner"><div class="kb-title">ENEMY ELIMINATED</div><div class="kb-sub" id="kill-sub"></div></div>
+      <div class="prompt" id="prompt"><span class="key">E</span> <span id="prompt-text">PRESIONA E PARA RECOGER</span></div>
+      <div class="progress" id="heal-progress"><div class="progress-fill" id="heal-fill"></div><span>USING MEDKIT</span></div>
+      <div class="toasts" id="toasts"></div>
+      <div class="dmg-numbers" id="dmg-numbers"></div>
+      <div class="vignette" id="vignette"></div>
+      <div class="zone-vignette" id="zone-vignette"></div>
+
+      <div class="tutorial" id="tutorial">
+        <div class="tut-title">CONTROLS</div>
+        <div><span class="key">W A S D</span> MOVE</div>
+        <div><span class="key">SHIFT</span> SPRINT</div>
+        <div><span class="key">SPACE</span> JUMP</div>
+        <div><span class="key">MOUSE</span> AIM · <span class="key">RMB</span> ADS</div>
+        <div><span class="key">LEFT CLICK</span> SHOOT</div>
+        <div><span class="key">E</span> PICK UP</div>
+        <div><span class="key">R</span> RELOAD · <span class="key">1/2</span> SWAP · <span class="key">H</span> HEAL</div>
+      </div>
+      <div class="click-to-play" id="click-to-play">CLICK TO PLAY</div>
+    </section>
+
+    <!-- ============ PAUSE / END ============ -->
+    <section id="pause" class="screen overlay">
+      <div class="panel">
+        <h3>PAUSED</h3>
+        <button id="btn-resume" class="btn btn-primary">RESUME</button>
+        <button id="btn-pause-settings" class="btn">SETTINGS</button>
+        <button id="btn-quit" class="btn">QUIT TO MENU</button>
+      </div>
+    </section>
+
+    <section id="end" class="screen overlay">
+      <div class="panel end-panel">
+        <div class="end-rank" id="end-rank">#1</div>
+        <h3 id="end-title">LAST ONE STANDING</h3>
+        <div class="end-stats" id="end-stats"></div>
+        <button id="btn-again" class="btn btn-primary">PLAY AGAIN</button>
+        <button id="btn-end-menu" class="btn">MAIN MENU</button>
+      </div>
+    </section>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
