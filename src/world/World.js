@@ -7,6 +7,8 @@ import { Sky, SUN_DIR, FOG_COLOR } from './Sky.js';
 import { Physics } from '../systems/Physics.js';
 import { ROADS } from './mapLayout.js';
 import { flatMat } from '../utils/geometry.js';
+import { COLOR_TEX } from './Structures.js';
+import { TEX, boxProjectUVs } from './Textures.js';
 
 /**
  * Owns everything static in the scene: terrain, roads, buildings,
@@ -42,7 +44,8 @@ export class World {
     // thin ribbons hugging the ground give crisp road edges on top of the
     // terrain vertex colors
     const mat = new THREE.MeshLambertMaterial({
-      color: '#a8916b',
+      color: '#b49c74',
+      map: TEX.dirt(),
       polygonOffset: true,
       polygonOffsetFactor: -2,
       polygonOffsetUnits: -2,
@@ -81,6 +84,9 @@ export class World {
       }
       const g = new THREE.BufferGeometry();
       g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      const uv = [];
+      for (let k = 0; k < pos.length; k += 3) uv.push(pos[k] / 5, pos[k + 2] / 5);
+      g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
       g.setIndex(idx);
       g.computeVertexNormals();
       geos.push(g);
@@ -166,9 +172,9 @@ export class World {
   }
 
   _buildLights() {
-    const hemi = new THREE.HemisphereLight('#dbe9f5', '#7a6c50', 1.75);
+    const hemi = new THREE.HemisphereLight('#d6e8f8', '#8a7a52', 1.6);
     this.scene.add(hemi);
-    const sun = new THREE.DirectionalLight('#ffe6c2', 2.3);
+    const sun = new THREE.DirectionalLight('#ffe2b8', 2.7);
     sun.position.copy(SUN_DIR).multiplyScalar(120);
     sun.castShadow = this.quality.shadows;
     const s = this.quality.high ? 2048 : 1024;
@@ -215,7 +221,15 @@ function mergeByMaterial(root) {
   const out = new THREE.Group();
   out.name = 'structures-merged';
   for (const [mat, geos] of buckets) {
-    const m = new THREE.Mesh(mergeGeometries(geos), mat);
+    const geo = mergeGeometries(geos);
+    let material = mat;
+    const tex = mat.color && COLOR_TEX.get(`#${mat.color.getHexString()}`);
+    if (tex) {
+      boxProjectUVs(geo, tex[1]);
+      material = mat.clone();
+      material.map = TEX[tex[0]]();
+    }
+    const m = new THREE.Mesh(geo, material);
     m.castShadow = true;
     m.receiveShadow = true;
     out.add(m);

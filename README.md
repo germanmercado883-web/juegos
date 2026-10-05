@@ -5,6 +5,14 @@ juegos móviles de ~2018–2019. El mapa, las armas, el loot, la UI y los sonido
 se generan por código. El único asset externo es el esqueleto animado de los
 personajes (ver Créditos), vestido con ropa táctica original.
 
+## Novedades v6 (visual)
+
+- Texturas procedurales (pasto, tierra, yeso, madera, ladrillo, metal
+  corrugado, tejas, concreto) con UV proyectadas por caja en las estructuras.
+- Follaje con sombreado por altura, paleta e iluminación revisadas.
+- Calidad MEDIUM con sombras (por defecto en celulares).
+- Casas con contraventanas, porche, marco y puerta de madera.
+
 ## Novedades v5
 
 - Buggies todoterreno (F / botón DRIVE): motor con sonido, suspensión que

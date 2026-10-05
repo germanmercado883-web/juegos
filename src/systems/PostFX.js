@@ -13,8 +13,8 @@ import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 const GradeShader = {
   uniforms: {
     tDiffuse: { value: null },
-    saturation: { value: 1.14 },
-    warmth: { value: 0.03 },
+    saturation: { value: 0.96 },
+    warmth: { value: 0.0 },
     vignette: { value: 0.28 },
   },
   vertexShader: `
@@ -41,7 +41,7 @@ export class PostFX {
   constructor(renderer, scene, camera) {
     this.composer = new EffectComposer(renderer);
     this.composer.addPass(new RenderPass(scene, camera));
-    this.bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.32, 0.5, 0.82);
+    this.bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.22, 0.45, 0.88);
     this.composer.addPass(this.bloom);
     this.composer.addPass(new ShaderPass(GradeShader));
     this.composer.addPass(new OutputPass());

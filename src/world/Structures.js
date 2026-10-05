@@ -3,6 +3,28 @@ import { box, flatMat, prismGeometry } from '../utils/geometry.js';
 import { RNG } from '../utils/random.js';
 import { BUILDINGS, CONTAINERS, CRATES } from './mapLayout.js';
 
+/** Which procedural texture each structure color uses: hex -> [texture, meters per repeat]. */
+export const COLOR_TEX = new Map(
+  Object.entries({
+    '#8d8579': ['concrete', 3], '#a59a88': ['concrete', 3], '#9a9286': ['concrete', 3], '#7f776c': ['concrete', 3],
+    '#7d7f7b': ['concrete', 3], '#857c70': ['concrete', 3], '#7c786f': ['concrete', 3], '#a7a294': ['concrete', 3],
+    '#8d887c': ['concrete', 3], '#9b968a': ['concrete', 3], '#5b524a': ['wood', 2],
+    '#7a6e64': ['brick', 1.6], '#7b5a3e': ['wood', 1.5], '#6c5038': ['wood', 1.5], '#6d5b45': ['wood', 2],
+    '#ece6d8': ['wood', 2], '#7f8a8c': ['metal', 1.2], '#8a9a8f': ['metal', 2], '#6e4e3e': ['metal', 2],
+    '#6a5d52': ['wood', 2], '#7b6c60': ['wood', 2], '#6b5547': ['metal', 1.5], '#a7834f': ['crate', 1.2],
+    '#7b5c35': ['wood', 1], '#6e5236': ['wood', 1.5], '#8a6a46': ['wood', 1.5], '#8a3f2e': ['metal', 2],
+    '#6b3226': ['metal', 2], '#c7a03a': ['metal', 2],
+    '#6b4a30': ['wood', 1.2], '#e8e2d2': ['wood', 1.5], '#5b6f5a': ['wood', 0.8],
+  }),
+);
+for (const b of BUILDINGS) {
+  if (!b.wall) continue;
+  const wallTex = { house: ['plaster', 3], barn: ['wood', 2.4], warehouse: ['metal', 2.2], shed: ['wood', 2] }[b.type];
+  if (wallTex) COLOR_TEX.set(b.wall, wallTex);
+  COLOR_TEX.set(b.roof, b.type === 'house' ? ['shingle', 2.2] : ['metal', 2.2]);
+}
+for (const c of CONTAINERS) COLOR_TEX.set(c.color, ['metal', 1.4]);
+
 /**
  * Builds every man-made structure on the map. Pieces are authored in a
  * local frame (door facing +Z) and registered as oriented box colliders.
@@ -76,11 +98,19 @@ export class StructureBuilder {
     const frame = '#e8e2d2';
     const ww = 1.1;
     const wh = 0.9;
+    const shutter = '#5b6f5a';
     const put = (lx, lz, alongX) => {
       const gw = alongX ? ww : t + 0.06;
       const gd = alongX ? t + 0.06 : ww;
       this._decor(ctx, gw + (alongX ? 0.16 : 0), wh + 0.16, gd + (alongX ? 0 : 0.16), lx, y, lz, frame);
       this._decor(ctx, gw, wh, gd + (alongX ? 0.02 : 0), lx, y, lz, glass);
+      // shutters either side + sill
+      for (const sgn of [-1, 1]) {
+        if (alongX) this._decor(ctx, 0.42, wh + 0.1, t + 0.1, lx + sgn * (ww / 2 + 0.3), y, lz, shutter);
+        else this._decor(ctx, t + 0.1, wh + 0.1, 0.42, lx, y, lz + sgn * (ww / 2 + 0.3), shutter);
+      }
+      if (alongX) this._decor(ctx, ww + 0.3, 0.08, t + 0.2, lx, y - wh / 2 - 0.1, lz, frame);
+      else this._decor(ctx, t + 0.2, 0.08, ww + 0.3, lx, y - wh / 2 - 0.1, lz, frame);
     };
     put(-w / 4, -d / 2 + t / 2, true);
     put(w / 4, -d / 2 + t / 2, true);
@@ -112,7 +142,17 @@ export class StructureBuilder {
     this._gableRoof(ctx, w, d, H, 1.8, b.roof);
     // chimney + door step + porch light
     this._decor(ctx, 0.6, 1.8, 0.6, w / 4, H + 1.3, -d / 5, '#7a6e64');
+    this._decor(ctx, 0.72, 0.12, 0.72, w / 4, H + 2.2, -d / 5, '#5a524a');
     this._solid(ctx, 2.2, 0.2, 1.0, 0, 0.1, d / 2 + 0.5, '#9a9286');
+    // door frame and a half-open wooden door (decor only, the doorway stays walkable)
+    this._decor(ctx, 1.8, 0.12, 0.32, 0, 2.36, d / 2 - 0.1, '#e8e2d2');
+    for (const sx of [-0.86, 0.86]) this._decor(ctx, 0.1, 2.3, 0.32, sx, 1.15, d / 2 - 0.1, '#e8e2d2');
+    const door = this._decor(ctx, 1.45, 2.2, 0.07, 0, 1.12, 0, '#6b4a30');
+    door.position.set(-0.78 + Math.cos(1.2) * 0.72, 1.12, d / 2 - 0.15 - Math.sin(1.2) * 0.72);
+    door.rotation.y = 1.2;
+    // porch awning on two posts
+    this._decor(ctx, 2.8, 0.12, 1.5, 0, 2.75, d / 2 + 0.75, b.roof);
+    for (const sx of [-1.25, 1.25]) this._decor(ctx, 0.12, 2.7, 0.12, sx, 1.35, d / 2 + 1.4, '#e8e2d2');
     // simple interior: table + shelf
     this._solid(ctx, 1.4, 0.8, 0.8, -w / 4, 0.55, -d / 6, '#7b5a3e');
     this._solid(ctx, 0.5, 1.8, 2.0, w / 2 - 0.6, 1.05, -d / 6, '#6c5038');

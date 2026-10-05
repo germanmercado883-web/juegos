@@ -2,6 +2,24 @@ import * as THREE from 'three';
 import { RNG, valueNoise } from '../utils/random.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { PLAY_LIMIT } from './mapLayout.js';
+import { TEX } from './Textures.js';
+
+/** Darken the lower part of a foliage mesh: cheap fake ambient occlusion. */
+function heightShade(geo, lo = 0.55, hi = 1.05) {
+  geo.computeBoundingBox();
+  const { min, max } = geo.boundingBox;
+  const pos = geo.attributes.position;
+  const col = new Float32Array(pos.count * 3);
+  for (let i = 0; i < pos.count; i++) {
+    const t = (pos.getY(i) - min.y) / (max.y - min.y || 1);
+    const v = lo + (hi - lo) * Math.pow(t, 0.8);
+    col[i * 3] = col[i * 3 + 1] = col[i * 3 + 2] = v;
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  return geo;
+}
+
+const foliageMat = () => new THREE.MeshLambertMaterial({ color: '#ffffff', flatShading: true, vertexColors: true, map: TEX.leaves() });
 
 /**
  * Trees, bushes, rocks and grass, all drawn with InstancedMesh so a few
@@ -84,8 +102,10 @@ export class Vegetation {
     ]);
 
     const trunks = this._instanced(trunkGeo, new THREE.MeshLambertMaterial({ color: '#6b4f38', flatShading: true }), pts.length);
-    const pines = this._instanced(pineGeo, new THREE.MeshLambertMaterial({ color: '#ffffff', flatShading: true }), pineCount);
-    const leaves = this._instanced(leafGeo, new THREE.MeshLambertMaterial({ color: '#ffffff', flatShading: true }), pts.length - pineCount);
+    heightShade(pineGeo, 0.5, 1.1);
+    heightShade(leafGeo, 0.55, 1.12);
+    const pines = this._instanced(pineGeo, foliageMat(), pineCount);
+    const leaves = this._instanced(leafGeo, foliageMat(), pts.length - pineCount);
 
     const m = new THREE.Matrix4();
     const q = new THREE.Quaternion();
@@ -93,8 +113,8 @@ export class Vegetation {
     const p = new THREE.Vector3();
     const up = new THREE.Vector3(0, 1, 0);
     const c = new THREE.Color();
-    const pineCols = ['#4f6e45', '#5a7a4a', '#466440', '#62804f'];
-    const leafCols = ['#7d9a4c', '#8ba555', '#6f8d48', '#a3a858', '#93934a'];
+    const pineCols = ['#4c7a42', '#5a8a48', '#447040', '#62904e'];
+    const leafCols = ['#7aa648', '#8cb452', '#6c9a44', '#a8b455', '#c2a64a'];
     let pi = 0;
     let li = 0;
     pts.forEach(([x, z], i) => {
@@ -131,7 +151,8 @@ export class Vegetation {
       new THREE.IcosahedronGeometry(0.8, 0).translate(0, 0.45, 0),
       new THREE.IcosahedronGeometry(0.6, 0).translate(0.6, 0.35, 0.2),
     ]);
-    const im = this._instanced(geo, new THREE.MeshLambertMaterial({ color: '#ffffff', flatShading: true }), pts.length);
+    heightShade(geo, 0.6, 1.08);
+    const im = this._instanced(geo, foliageMat(), pts.length);
     const m = new THREE.Matrix4();
     const q = new THREE.Quaternion();
     const c = new THREE.Color();
@@ -150,7 +171,7 @@ export class Vegetation {
     // a few big cover boulders in the open centre
     for (const [x, z] of [[-22, -18], [18, 16], [28, -22], [-26, 26], [2, 30], [40, 30]]) pts.push([x, z]);
     const geo = new THREE.DodecahedronGeometry(1, 0);
-    const im = this._instanced(geo, new THREE.MeshLambertMaterial({ color: '#ffffff', flatShading: true }), pts.length);
+    const im = this._instanced(geo, new THREE.MeshLambertMaterial({ color: '#ffffff', flatShading: true, map: TEX.concrete() }), pts.length);
     const m = new THREE.Matrix4();
     const q = new THREE.Quaternion();
     const c = new THREE.Color();
@@ -170,7 +191,7 @@ export class Vegetation {
 
   _grass() {
     const rng = this.rng;
-    const count = this.quality.high ? 14000 : 6000;
+    const count = this.quality.high ? 14000 : this.quality.shadows ? 10000 : 6000;
     // tuft = 3 crossed blades, darker at the root. Each blade is emitted
     // with both windings and upward normals so it never renders dark from
     // behind (DoubleSide would flip the normal on back faces).

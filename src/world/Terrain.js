@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { fbm, valueNoise } from '../utils/random.js';
 import { smoothstep, lerp, distToSegment } from '../utils/math.js';
 import { MAP_HALF, ROADS, flattenZones } from './mapLayout.js';
+import { TEX } from './Textures.js';
 
 const SEED = 7;
 const TERRAIN_SIZE = 640;
@@ -99,9 +100,9 @@ export class Terrain {
 
     // One color per triangle for a faceted low-poly look.
     const colors = new Float32Array(pos.count * 3);
-    const grassA = new THREE.Color('#7f9a52');
-    const grassB = new THREE.Color('#9aaa5c');
-    const dry = new THREE.Color('#b3a56b');
+    const grassA = new THREE.Color('#6a8f3e');
+    const grassB = new THREE.Color('#8aa64c');
+    const dry = new THREE.Color('#b0a05e');
     const dirt = new THREE.Color('#a68a62');
     const rock = new THREE.Color('#8a8578');
     const snowy = new THREE.Color('#b9b8ad');
@@ -138,8 +139,15 @@ export class Terrain {
     }
     geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     geo.computeVertexNormals();
+    // world-space UVs: one grass tile every 4 m
+    const uv = new Float32Array(pos.count * 2);
+    for (let i = 0; i < pos.count; i++) {
+      uv[i * 2] = pos.getX(i) / 4;
+      uv[i * 2 + 1] = pos.getZ(i) / 4;
+    }
+    geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
 
-    const mesh = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }));
+    const mesh = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, map: TEX.grass() }));
     mesh.receiveShadow = true;
     mesh.name = 'terrain';
     return mesh;

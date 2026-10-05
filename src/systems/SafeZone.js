@@ -40,8 +40,8 @@ export class SafeZone {
         varying vec2 vUv;
         void main() {
           float stripes = step(0.55, fract(vUv.x * 160.0 + vUv.y * 5.0 - uTime * 0.5));
-          float fade = pow(1.0 - vUv.y, 1.6);
-          float base = 0.16 + stripes * 0.06;
+          float fade = pow(1.0 - vUv.y, 3.0);
+          float base = 0.2 + stripes * 0.05 * (1.0 - vUv.y * 4.0);
           float edge = smoothstep(0.03, 0.0, vUv.y) * 0.5;
           vec3 col = mix(vec3(0.35, 0.6, 1.0), vec3(0.75, 0.88, 1.0), stripes);
           gl_FragColor = vec4(col, (base * fade + edge));

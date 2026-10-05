@@ -15,6 +15,7 @@ import { Airdrop } from '../systems/Airdrop.js';
 import { Lobby } from '../ui/Lobby.js';
 import { Grenades } from '../weapons/Grenades.js';
 import { VehicleManager } from '../vehicles/Vehicle.js';
+import { setMaxAnisotropy } from '../world/Textures.js';
 import { preloadSurvivor } from '../entities/SurvivorModel.js';
 import { TouchControls, isTouchDevice } from '../ui/TouchControls.js';
 import { angleDiff } from '../utils/math.js';
@@ -41,6 +42,7 @@ export class Game {
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.05;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
+    setMaxAnisotropy(this.renderer.capabilities.getMaxAnisotropy());
     this._applyQuality();
 
     this.scene = new THREE.Scene();
@@ -70,9 +72,10 @@ export class Game {
   }
 
   _applyQuality() {
-    const high = this.settings.quality !== 'low';
-    this.quality = { high, shadows: high };
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, high ? 2 : 1));
+    const q = this.settings.quality;
+    const high = q === 'high';
+    this.quality = { high, shadows: q !== 'low' };
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, high ? 2 : q === 'medium' ? 1.25 : 1));
     this.renderer.shadowMap.enabled = this.quality.shadows;
     if (this.world?.sun) {
       this.world.sun.castShadow = this.quality.shadows;
