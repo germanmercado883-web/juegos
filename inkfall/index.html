@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+    <meta name="theme-color" content="#120f0c" />
+    <title>Inkfall: Stick Legions</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/ui/styles.css" />
+  </head>
+  <body>
+    <canvas id="view"></canvas>
+
+    <!-- ================= MAIN MENU ================= -->
+    <section id="menu" class="screen on">
+      <div class="menu-shade"></div>
+      <div class="menu-col">
+        <div class="logo">
+          <h1>INKFALL</h1>
+          <h2>STICK LEGIONS</h2>
+        </div>
+        <nav class="menu-nav">
+          <button class="btn btn-gold" data-go="map">CAMPAIGN</button>
+          <button class="btn" data-go="endless">ENDLESS NIGHT</button>
+          <button class="btn" data-go="skirmish">SKIRMISH</button>
+          <button class="btn" data-go="armory">ARMORY</button>
+          <button class="btn btn-small" data-go="settings">SETTINGS</button>
+        </nav>
+        <div class="menu-foot"><span id="menu-crowns">♛ 0</span> · <span id="menu-stars">★ 0/36</span></div>
+      </div>
+    </section>
+
+    <!-- ================= CAMPAIGN MAP ================= -->
+    <section id="map" class="screen panel-screen">
+      <header class="bar">
+        <button class="btn btn-small" data-go="menu">◀ BACK</button>
+        <h3>CAMPAIGN · THE INKLANDS</h3>
+        <div class="bar-right"><span id="map-crowns">♛ 0</span></div>
+      </header>
+      <div class="map-track" id="map-track"></div>
+    </section>
+
+    <!-- ================= BRIEF ================= -->
+    <section id="brief" class="screen modal">
+      <div class="card brief-card">
+        <div class="brief-art" id="brief-art"></div>
+        <div class="brief-body">
+          <div class="brief-num" id="brief-num">BATTLE 1</div>
+          <h3 id="brief-title">FIRST LIGHT</h3>
+          <div class="brief-enemy" id="brief-enemy"></div>
+          <p id="brief-text"></p>
+          <div class="brief-unlock" id="brief-unlock"></div>
+          <div class="row">
+            <button class="btn btn-small" data-go="map">BACK</button>
+            <button class="btn btn-gold" id="brief-play">FIGHT!</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= ARMORY ================= -->
+    <section id="armory" class="screen panel-screen">
+      <header class="bar">
+        <button class="btn btn-small" data-go="back">◀ BACK</button>
+        <h3>ARMORY</h3>
+        <div class="bar-right"><span id="armory-crowns">♛ 0</span></div>
+      </header>
+      <p class="hint">Earn crowns ♛ by winning stars in the campaign and surviving Endless Night. Upgrades are permanent.</p>
+      <div class="armory-grid" id="armory-grid"></div>
+    </section>
+
+    <!-- ================= SKIRMISH ================= -->
+    <section id="skirmish" class="screen panel-screen">
+      <header class="bar">
+        <button class="btn btn-small" data-go="menu">◀ BACK</button>
+        <h3>SKIRMISH</h3>
+        <div class="bar-right"></div>
+      </header>
+      <div class="sk-grid">
+        <div class="sk-group"><h4>ENEMY</h4><div class="chips" id="sk-faction"></div></div>
+        <div class="sk-group"><h4>BATTLEFIELD</h4><div class="chips" id="sk-theme"></div></div>
+        <div class="sk-group"><h4>DIFFICULTY</h4><div class="chips" id="sk-diff"></div></div>
+      </div>
+      <div class="row center"><button class="btn btn-gold" id="sk-play">START BATTLE</button></div>
+    </section>
+
+    <!-- ================= SETTINGS ================= -->
+    <section id="settings" class="screen modal">
+      <div class="card settings-card">
+        <h3>SETTINGS</h3>
+        <label class="set-row">SOUND <input type="range" id="set-vol" min="0" max="1" step="0.05" /></label>
+        <label class="set-row">MUSIC <input type="range" id="set-music" min="0" max="1" step="0.05" /></label>
+        <label class="set-row">BATTLE TIPS <input type="checkbox" id="set-tips" /></label>
+        <div class="row">
+          <button class="btn btn-small" id="set-reset">RESET PROGRESS</button>
+          <button class="btn btn-gold" data-go="back">DONE</button>
+        </div>
+        <p class="hint" id="reset-confirm" hidden>Tap RESET again to erase all progress.</p>
+      </div>
+    </section>
+
+    <!-- ================= HUD ================= -->
+    <section id="hud" class="hidden">
+      <div class="top">
+        <button class="hbtn" id="h-pause" aria-label="Pause">II</button>
+        <div class="res"><i class="ic gold"></i><b id="h-gold">0</b></div>
+        <div class="res"><i class="ic ess"></i><b id="h-ess">0</b></div>
+        <div class="res"><i class="ic pop"></i><b id="h-pop">0/40</b></div>
+        <canvas id="minimap" width="300" height="34"></canvas>
+        <button class="hbtn" id="h-speed">x1</button>
+      </div>
+      <div class="statues">
+        <div class="sbar mine"><span>YOUR STATUE</span><i id="h-hp0"></i></div>
+        <div class="sbar foe"><span id="h-foe-name">ENEMY</span><i id="h-hp1"></i></div>
+      </div>
+      <div class="cmds">
+        <button class="cmd" id="c-attack" data-cmd="attack"><span>⚔</span>ATTACK</button>
+        <button class="cmd on" id="c-defend" data-cmd="defend"><span>⛨</span>DEFEND</button>
+        <button class="cmd" id="c-garrison" data-cmd="garrison"><span>⌂</span>GARRISON</button>
+      </div>
+      <div class="side">
+        <button class="sbtn" id="h-forge"><span>⚒</span>FORGE</button>
+        <button class="sbtn" id="h-control"><span>♛</span>CONTROL</button>
+      </div>
+      <div class="train" id="train"></div>
+      <div class="pad" id="pad">
+        <button class="pbtn" id="p-left">◀</button>
+        <button class="pbtn" id="p-right">▶</button>
+        <div class="pad-name" id="pad-name">BLADE</div>
+        <button class="pbtn p-exit" id="p-exit">✕</button>
+        <button class="pbtn p-atk" id="p-atk">HIT</button>
+      </div>
+      <div class="banner" id="banner"><b id="banner-t"></b><span id="banner-s"></span></div>
+      <div class="toast" id="toast"></div>
+      <div class="tip" id="tip"></div>
+      <div class="forge" id="forge">
+        <div class="forge-head"><h4>FORGE · RESEARCH</h4><button class="hbtn" id="forge-close">✕</button></div>
+        <div class="forge-list" id="forge-list"></div>
+      </div>
+      <div class="keys">1-7 TRAIN · Z ATTACK · X DEFEND · V GARRISON · C CONTROL · A/D MOVE · SPACE HIT · F FORGE</div>
+    </section>
+
+    <!-- ================= PAUSE / RESULT ================= -->
+    <section id="pause" class="screen modal">
+      <div class="card small-card">
+        <h3>PAUSED</h3>
+        <button class="btn btn-gold" id="pz-resume">RESUME</button>
+        <button class="btn" id="pz-restart">RESTART</button>
+        <button class="btn" data-go="settings">SETTINGS</button>
+        <button class="btn btn-small" id="pz-quit">QUIT</button>
+      </div>
+    </section>
+
+    <section id="result" class="screen modal">
+      <div class="card result-card">
+        <h3 id="r-title">VICTORY</h3>
+        <div class="r-stars" id="r-stars"></div>
+        <div class="r-stats" id="r-stats"></div>
+        <div class="r-reward" id="r-reward"></div>
+        <div class="row">
+          <button class="btn btn-small" id="r-menu">MENU</button>
+          <button class="btn" id="r-retry">RETRY</button>
+          <button class="btn btn-gold" id="r-next">NEXT ▶</button>
+        </div>
+      </div>
+    </section>
+
+    <div id="rotate"><div>⟳</div>ROTATE YOUR PHONE</div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
