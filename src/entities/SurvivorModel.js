@@ -24,7 +24,13 @@ const paletteGeometry = new Map(); // `${palette}|${mesh}` -> geometry with colo
 
 export async function preloadSurvivor() {
   if (template) return;
-  const gltf = await new GLTFLoader().loadAsync(MODEL_URL);
+  const loader = new GLTFLoader();
+  // single-file builds (e.g. a hosted page that can't serve .glb) embed the
+  // model as base64 in window.__SURVIVOR_GLB_B64
+  const embedded = typeof window !== 'undefined' && window.__SURVIVOR_GLB_B64;
+  const gltf = embedded
+    ? await loader.parseAsync(Uint8Array.from(atob(embedded), (c) => c.charCodeAt(0)).buffer, '')
+    : await loader.loadAsync(MODEL_URL);
   template = gltf.scene;
   clips = new Map(gltf.animations.map((a) => [a.name, a]));
   template.updateMatrixWorld(true);

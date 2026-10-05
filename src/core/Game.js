@@ -12,6 +12,7 @@ import { HUD } from '../ui/HUD.js';
 import { DropSequence } from '../systems/DropSequence.js';
 import { PostFX } from '../systems/PostFX.js';
 import { preloadSurvivor } from '../entities/SurvivorModel.js';
+import { TouchControls, isTouchDevice } from '../ui/TouchControls.js';
 import { ENEMY_SPAWNS, LOOT_SPAWNS, PLAYER_SPAWN } from '../world/mapLayout.js';
 
 const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
@@ -47,7 +48,7 @@ export class Game {
     this._resize();
 
     this.input.onLockChange = (locked) => {
-      this.hud?.setClickToPlay(!locked && this.state === 'playing');
+      this.hud?.setClickToPlay(!locked && this.state === 'playing' && !this.touch);
       if (!locked && this.state === 'playing' && this._hadLock) this.pause();
       if (locked) this._hadLock = true;
     };
@@ -55,6 +56,8 @@ export class Game {
       if (this.state !== 'playing') return;
       if (e.code === 'KeyP' || (e.code === 'Escape' && !this.input.locked)) this.pause();
     });
+
+    this.touch = isTouchDevice() ? new TouchControls(this) : null;
 
     this._last = performance.now();
     this.renderer.setAnimationLoop(() => this._frame());
@@ -170,8 +173,9 @@ export class Game {
     this._hadLock = false;
     this.hud.reset();
     this.hud.show();
-    this.hud.setClickToPlay(!this.input.locked);
-    this.input.requestLock();
+    this.hud.setClickToPlay(!this.input.locked && !this.touch);
+    if (this.touch) this.touch.show(true);
+    else this.input.requestLock();
     this.audio.startAmbience();
     this.drop.begin(this.player);
     this._last = performance.now();
@@ -184,6 +188,7 @@ export class Game {
     this.input.mouse.left = this.input.mouse.right = false;
     this._hadLock = false;
     this.input.exitLock();
+    this.touch?.show(false);
     this.ui.showPause();
   }
 
@@ -191,7 +196,8 @@ export class Game {
     if (this.state !== 'paused') return;
     this.state = 'playing';
     this.ui.hidePause();
-    this.input.requestLock();
+    if (this.touch) this.touch.show(true);
+    else this.input.requestLock();
     this._last = performance.now();
   }
 
@@ -200,6 +206,7 @@ export class Game {
     this.input.enabled = false;
     this.input.exitLock();
     this.hud.hide();
+    this.touch?.show(false);
     this.audio.stopAmbience();
   }
 
@@ -236,6 +243,7 @@ export class Game {
     this.input.keys.clear();
     this.input.mouse.left = this.input.mouse.right = false;
     this.input.exitLock();
+    this.touch?.show(false);
     if (victory) this.audio.victory();
     const rank = victory ? 1 : this.aliveCount;
     this.ui.showEnd({

@@ -1,6 +1,7 @@
 const $ = (id) => document.getElementById(id);
 
-const DEFAULTS = { sensitivity: 1, volume: 0.6, quality: 'high', invertY: false };
+const IS_TOUCH = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+const DEFAULTS = { sensitivity: 1, volume: 0.6, quality: IS_TOUCH ? 'low' : 'high', invertY: false };
 const KEY = 'duskvale.settings';
 
 export function loadSettings() {
