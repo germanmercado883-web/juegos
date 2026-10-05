@@ -1,7 +1,9 @@
+import { SKINS } from '../entities/CharacterModel.js';
+
 const $ = (id) => document.getElementById(id);
 
 const IS_TOUCH = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
-const DEFAULTS = { sensitivity: 1, volume: 0.6, quality: IS_TOUCH ? 'low' : 'high', invertY: false, aimAssist: IS_TOUCH };
+const DEFAULTS = { sensitivity: 1, volume: 0.6, quality: IS_TOUCH ? 'low' : 'high', invertY: false, aimAssist: IS_TOUCH, skin: 'player' };
 const KEY = 'duskvale.settings';
 
 export function loadSettings() {
@@ -45,6 +47,28 @@ export class MenuUI {
     $('btn-again').onclick = () => this.handlers.again?.();
     $('btn-end-menu').onclick = () => this.handlers.quit?.();
     this._bindSettings();
+    this._bindSkins();
+  }
+
+  _bindSkins() {
+    const s = this.settings;
+    const name = $('skin-name');
+    let i = Math.max(0, SKINS.findIndex(([k]) => k === s.skin));
+    const apply = () => {
+      s.skin = SKINS[i][0];
+      name.textContent = SKINS[i][1];
+      saveSettings(s);
+      this.handlers.skinChanged?.(s.skin);
+    };
+    $('skin-prev').onclick = () => {
+      i = (i + SKINS.length - 1) % SKINS.length;
+      apply();
+    };
+    $('skin-next').onclick = () => {
+      i = (i + 1) % SKINS.length;
+      apply();
+    };
+    name.textContent = SKINS[i][1];
   }
 
   on(name, fn) {
@@ -129,12 +153,15 @@ export class MenuUI {
     this.hideAll();
   }
 
-  showEnd({ victory, rank, kills, time }) {
+  showEnd({ victory, rank, kills, time, stats }) {
     $('end-rank').textContent = `#${rank}`;
     $('end-title').textContent = victory ? 'LAST ONE STANDING' : 'ELIMINATED';
     const mm = Math.floor(time / 60);
     const ss = String(Math.floor(time % 60)).padStart(2, '0');
-    $('end-stats').innerHTML = `<div><b>${kills}</b>KILLS</div><div><b>${mm}:${ss}</b>SURVIVED</div><div><b>#${rank}</b>PLACE</div>`;
+    const acc = stats && stats.shots ? Math.round((stats.hits / stats.shots) * 100) : 0;
+    $('end-stats').innerHTML =
+      `<div><b>${kills}</b>KILLS</div><div><b>${mm}:${ss}</b>SURVIVED</div><div><b>#${rank}</b>PLACE</div>` +
+      `<div><b>${Math.round(stats?.damage ?? 0)}</b>DAMAGE</div><div><b>${acc}%</b>ACCURACY</div><div><b>${stats?.headshots ?? 0}</b>HEADSHOTS</div>`;
     this.show('end');
   }
 }

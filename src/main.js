@@ -52,6 +52,8 @@ ui.on('quit', () => {
   game.audio.startMusic();
 });
 ui.on('settingsChanged', () => game.applySettings());
+ui.on('skinChanged', (key) => game.lobby.setSkin(key));
+game.lobby.skin = settings.skin;
 
 // handy for debugging from the console
 window.__duskvale = game;

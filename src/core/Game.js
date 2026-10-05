@@ -14,6 +14,7 @@ import { PostFX } from '../systems/PostFX.js';
 import { Airdrop } from '../systems/Airdrop.js';
 import { Lobby } from '../ui/Lobby.js';
 import { Grenades } from '../weapons/Grenades.js';
+import { VehicleManager } from '../vehicles/Vehicle.js';
 import { preloadSurvivor } from '../entities/SurvivorModel.js';
 import { TouchControls, isTouchDevice } from '../ui/TouchControls.js';
 import { angleDiff } from '../utils/math.js';
@@ -110,6 +111,7 @@ export class Game {
         this.drop = new DropSequence(this);
         this.airdrop = new Airdrop(this);
         this.grenades = new Grenades(this);
+        this.vehicles = new VehicleManager(this);
       }]);
       steps.push(['GRADING COLORS', () => {
         this.postfx = new PostFX(this.renderer, this.scene, this.camera);
@@ -169,6 +171,9 @@ export class Game {
     this.zone.reset();
     this.airdrop.reset();
     this.grenades.reset();
+    this.vehicles.reset();
+    this._engine?.stop();
+    this._engine = null;
     this.zone.onEvent = (e) => {
       if (e === 'shrink') this.hud.toast('THE ZONE IS CLOSING!', 'warn');
       else {
@@ -271,7 +276,38 @@ export class Game {
       rank,
       kills: this.player.kills,
       time: this.matchTime,
+      stats: this.player.stats,
     });
+  }
+
+  _toggleVehicle() {
+    const p = this.player;
+    if (p.vehicle) {
+      const v = p.vehicle;
+      v.driver = null;
+      p.vehicle = null;
+      // step out on the left side
+      const side = new THREE.Vector3(-1.9, 0, 0).applyEuler(new THREE.Euler(0, v.yaw, 0));
+      p.pos.copy(v.pos).add(side);
+      p.pos.y = this.world.physics.groundHeight(p.pos.x, p.pos.z, p.pos.y + 1);
+      this.world.physics.resolveCircle(p.pos, p.pos.y, 1.8, 0.38);
+      p.vel.set(0, 0, 0);
+      p.root.rotation.set(0, p.facing, 0);
+      this.cam.distance = 4.2;
+      this._engine?.stop();
+      this._engine = null;
+      this.hud.setSpeed(null);
+      return;
+    }
+    const v = this.vehicles.nearest(p.pos);
+    if (!v) return;
+    v.driver = p;
+    p.vehicle = v;
+    p.crouching = false;
+    p.healing = 0;
+    this.cam.distance = 7.5;
+    this._engine = this.audio.engine();
+    this.hud.toast(this.touch ? 'JOYSTICK: DRIVE & STEER · JUMP: BRAKE' : 'W/S DRIVE · A/D STEER · SPACE BRAKE · F EXIT');
   }
 
   /** Short vibration on phones that support it. */
@@ -378,7 +414,8 @@ export class Game {
         }
       }
     }
-    if (input.wasPressed('KeyG') && player.phase === 'ground') {
+    if (input.wasPressed('KeyF') && player.phase === 'ground' && player.alive) this._toggleVehicle();
+    if (input.wasPressed('KeyG') && player.phase === 'ground' && !player.vehicle) {
       if (!this.grenades.throw(player, this.cam)) this.hud.toast('NO GRENADES', 'warn');
     }
     if (input.wasPressed('KeyH')) {
@@ -386,8 +423,17 @@ export class Game {
     }
 
     this.drop.update(dt);
+    this.vehicles.update(dt, input);
     player.update(dt, input, this.cam);
+    if (player.vehicle) {
+      this._engine?.setSpeed(player.vehicle.speed);
+      this.hud.setSpeed(Math.round(Math.abs(player.vehicle.speed) * 3.6));
+    }
     this._aimAssist(dt);
+    if (player.vehicle && input.mouse.dx === 0 && Math.abs(player.vehicle.speed) > 2) {
+      // chase cam settles behind the buggy when the player isn't looking around
+      this.cam.yaw += angleDiff(this.cam.yaw, player.vehicle.yaw) * Math.min(1, dt * 1.8);
+    }
     const scoped = player.aiming && !!player.weapons.active.def.scope && player.phase === 'ground';
     player.root.visible = !scoped && player.phase !== 'plane';
     this.cam.update(dt, input, player.pos, this.settings, player.aiming, player.crouching, scoped);

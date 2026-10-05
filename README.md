@@ -5,6 +5,13 @@ juegos móviles de ~2018–2019. El mapa, las armas, el loot, la UI y los sonido
 se generan por código. El único asset externo es el esqueleto animado de los
 personajes (ver Créditos), vestido con ropa táctica original.
 
+## Novedades v5
+
+- Buggies todoterreno (F / botón DRIVE): motor con sonido, suspensión que
+  sigue el terreno, choques, atropellos y dirección analógica en el celular.
+- 4 atuendos originales seleccionables en el lobby (se guardan).
+- Estadísticas al final: daño, precisión y disparos a la cabeza.
+
 ## Novedades v4
 
 - Granadas (G / botón G): caen donde apunta la mira, rebotan y explotan.
@@ -59,6 +66,8 @@ Build de producción: `npm run build`, luego `npm run preview` (puerto 4173).
 | Clic derecho | Apuntar con mira (ADS) |
 | Rueda | Zoom de cámara |
 | E | Recoger loot |
+| F | Subir / bajar del buggy |
+| G | Lanzar granada |
 | R | Recargar |
 | 1 / 2 / Q | Cambiar de arma |
 | H | Usar botiquín |

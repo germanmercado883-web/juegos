@@ -270,7 +270,7 @@ canvas#game { position: fixed; inset: 0; width: 100%; height: 100%; display: blo
 /* ---------- end ---------- */
 .end-panel { text-align: center; align-items: center; min-width: 420px; }
 .end-rank { font-family: var(--num-font); font-size: 110px; line-height: 0.9; color: var(--amber); text-shadow: 0 4px 0 rgba(0,0,0,0.35); }
-.end-stats { display: flex; gap: 26px; justify-content: center; color: var(--muted); letter-spacing: 0.2em; margin-bottom: 10px; }
+.end-stats { display: grid; grid-template-columns: repeat(3, minmax(90px, 1fr)); gap: 12px 26px; justify-content: center; text-align: center; color: var(--muted); letter-spacing: 0.2em; margin-bottom: 10px; }
 .end-stats b { display: block; font-family: var(--num-font); font-size: 36px; color: #fff; font-weight: 500; }
 .end-panel .btn { width: 100%; }
 
@@ -381,3 +381,32 @@ body.scoped .hud-top, body.scoped .hud-left, body.scoped .hud-right, body.scoped
 
 .tb-nade { right: 196px; bottom: 228px; color: #c8d6a0; }
 body.no-nades .tb-nade { opacity: 0.35; }
+
+.speedo { right: auto; left: 22%; }
+body.touch .tb-drive { display: none; right: 216px; bottom: 84px; }
+body.touch.can-drive .tb-drive { display: block; }
+body.touch.driving .tb-drive::after { content: ''; }
+body.touch.driving #tb-fire, body.touch.driving #tb-aim, body.touch.driving #tb-crouch, body.touch.driving #tb-reload,
+body.touch.driving #tb-swap, body.touch.driving #tb-nade, body.touch.driving #tb-heal { display: none; }
+
+/* ---------- outfit picker ---------- */
+.skin-picker { display: none; align-items: center; gap: 10px; }
+body.lobby-ready .skin-picker { display: flex; position: fixed; right: max(24px, 8vw); bottom: 8vh; }
+.skin-arrow {
+  width: 44px; height: 44px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.6); background: rgba(14,20,26,0.55);
+  color: #fff; font-size: 16px; cursor: pointer;
+}
+.skin-arrow:hover { background: var(--amber); color: var(--ink); }
+.skin-name { min-width: 150px; text-align: center; background: rgba(14,20,26,0.6); padding: 6px 14px; border-bottom: 3px solid var(--amber); }
+.skin-name span { display: block; font-size: 11px; letter-spacing: 0.35em; color: var(--muted); }
+.skin-name b { font-size: 20px; letter-spacing: 0.15em; }
+
+body.touch .medkits { display: none; }
+@media (max-height: 500px) {
+  .end-panel { padding: 12px 22px; gap: 6px; max-height: 96vh; overflow: auto; }
+  .end-panel h3 { font-size: 20px; margin: 0; }
+  .end-stats { gap: 4px 18px; margin-bottom: 4px; font-size: 11px; }
+  .end-stats b { font-size: 24px; }
+  .end-panel .btn { padding: 6px 18px; font-size: 18px; }
+}
+body.driving .crosshair { opacity: 0; }

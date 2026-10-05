@@ -159,9 +159,19 @@ export class HUD {
 
     // pickup prompt
     const item = g.loot.nearest(p.pos);
-    document.body.classList.toggle('can-pick', !!(item && p.alive));
+    const car = !item && p.alive && p.phase === 'ground' && !p.vehicle ? g.vehicles?.nearest(p.pos) : null;
+    document.body.classList.toggle('can-pick', !!(item && p.alive) && !p.vehicle);
+    document.body.classList.toggle('can-drive', !!car || !!p.vehicle);
+    document.body.classList.toggle('driving', !!p.vehicle);
+    this._set('driveBtn', document.getElementById('tb-drive'), p.vehicle ? 'EXIT' : 'DRIVE');
+    if (car) {
+      e.prompt.classList.add('on');
+      this._set('prompt', e.promptText, 'PRESIONA F PARA CONDUCIR');
+    }
     document.body.classList.toggle('no-meds', p.medkits <= 0);
-    if (item && p.alive) {
+    if (car) {
+      // prompt already set
+    } else if (item && p.alive && !p.vehicle) {
       e.prompt.classList.add('on');
       this._set('prompt', e.promptText, `PRESIONA E PARA RECOGER — ${item.def.label}`);
     } else e.prompt.classList.remove('on');
@@ -255,6 +265,12 @@ export class HUD {
   setDropHint(text) {
     this.el.dropHint.textContent = text;
     this.el.dropHint.classList.toggle('on', !!text);
+  }
+
+  setSpeed(kmh) {
+    const el = document.getElementById('speedo');
+    el.classList.toggle('on', kmh !== null);
+    if (kmh !== null) this._set('speed', document.getElementById('speed-value'), String(kmh));
   }
 
   setAltitude(meters) {
@@ -385,6 +401,12 @@ export class HUD {
       g.lineWidth = 1;
       g.fillRect(mx - 3.5, mz - 3.5, 7, 7);
       g.strokeRect(mx - 3.5, mz - 3.5, 7, 7);
+    }
+
+    // vehicles
+    g.fillStyle = '#7fd3ff';
+    for (const v of this.game.vehicles?.list ?? []) {
+      g.fillRect((v.pos.x + MAP_HALF) * s - 2.5, (v.pos.z + MAP_HALF) * s - 1.5, 5, 3);
     }
 
     // loot pings

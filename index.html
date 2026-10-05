@@ -32,7 +32,12 @@
           <button id="btn-play" class="btn btn-primary">PLAY</button>
           <button id="btn-settings" class="btn">SETTINGS</button>
         </div>
-        <div class="menu-foot">PROTOTYPE BUILD 0.4 · SOLO · 10 SURVIVORS</div>
+        <div class="skin-picker" id="skin-picker">
+          <button class="skin-arrow" id="skin-prev" aria-label="Previous outfit">◀</button>
+          <div class="skin-name"><span>OUTFIT</span><b id="skin-name">RANGER</b></div>
+          <button class="skin-arrow" id="skin-next" aria-label="Next outfit">▶</button>
+        </div>
+        <div class="menu-foot">PROTOTYPE BUILD 0.5 · SOLO · 10 SURVIVORS</div>
       </div>
     </section>
 
@@ -80,6 +85,7 @@
       <div class="killfeed" id="killfeed"></div>
       <div class="drop-hint" id="drop-hint"></div>
       <div class="altimeter" id="altimeter"><span>ALT</span><b id="alt-value">0</b><em>m</em></div>
+      <div class="altimeter speedo" id="speedo"><span>SPEED</span><b id="speed-value">0</b><em>km/h</em></div>
 
       <div class="hud-left">
         <div class="stat">
@@ -129,7 +135,7 @@
         <div><span class="key">SPACE</span> JUMP · <span class="key">C</span> CROUCH</div>
         <div><span class="key">MOUSE</span> AIM · <span class="key">RMB</span> ADS</div>
         <div><span class="key">LEFT CLICK</span> SHOOT</div>
-        <div><span class="key">E</span> PICK UP</div>
+        <div><span class="key">E</span> PICK UP · <span class="key">F</span> DRIVE</div>
         <div><span class="key">R</span> RELOAD · <span class="key">1/2</span> SWAP · <span class="key">H</span> HEAL · <span class="key">G</span> GRENADE</div>
       </div>
       <div class="click-to-play" id="click-to-play">CLICK TO PLAY</div>
@@ -146,6 +152,7 @@
       <button class="tb tb-small" id="tb-reload">R</button>
       <button class="tb tb-small" id="tb-swap">⇄</button>
       <button class="tb tb-pick" id="tb-pick">PICK UP</button>
+      <button class="tb tb-pick tb-drive" id="tb-drive">DRIVE</button>
       <button class="tb tb-small tb-heal" id="tb-heal">✚</button>
       <button class="tb tb-small tb-nade" id="tb-nade">G</button>
       <button class="tb tb-small tb-pause" id="tb-pause">II</button>

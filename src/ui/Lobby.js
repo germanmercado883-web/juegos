@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { SurvivorModel, preloadSurvivor } from '../entities/SurvivorModel.js';
+import { SurvivorModel, preloadSurvivor, isSurvivorLoaded as clipsReady } from '../entities/SurvivorModel.js';
 import { box, flatMat } from '../utils/geometry.js';
 
 /**
@@ -66,12 +66,19 @@ export class Lobby {
       s.add(trunk, top);
     }
 
-    this.hero = new SurvivorModel('player', 'strider');
-    this.hero.root.position.y = 0.3;
-    this.hero.root.rotation.y = Math.PI * 0.82; // turned towards the camera
-    s.add(this.hero.root);
+    this.setSkin(this.skin || 'player');
     this.ready = true;
     document.body.classList.add('lobby-ready');
+  }
+
+  setSkin(key) {
+    this.skin = key;
+    if (!this.scene || !clipsReady()) return;
+    if (this.hero) this.scene.remove(this.hero.root);
+    this.hero = new SurvivorModel(key, 'strider');
+    this.hero.root.position.y = 0.3;
+    this.hero.root.rotation.y = Math.PI * 0.82; // turned towards the camera
+    this.scene.add(this.hero.root);
   }
 
   render(dt) {

@@ -22,6 +22,8 @@ let template = null;
 let clips = null;
 const paletteGeometry = new Map(); // `${palette}|${mesh}` -> geometry with colors
 
+export const isSurvivorLoaded = () => !!template;
+
 export async function preloadSurvivor() {
   if (template) return;
   const loader = new GLTFLoader();
@@ -277,8 +279,8 @@ export class SurvivorModel {
     const lieTarget = s.freefall ? -1.25 : 0;
     this.inner.rotation.x += (lieTarget - this.inner.rotation.x) * Math.min(1, dt * 4);
 
-    if (this.dead || s.freefall) {
-      this.gunPivot.visible = !this.dead && !s.freefall;
+    if (this.dead || s.freefall || s.driving) {
+      this.gunPivot.visible = !this.dead && !s.freefall && !s.driving;
       return;
     }
     this.gunPivot.visible = true;

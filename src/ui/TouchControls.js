@@ -39,6 +39,7 @@ export class TouchControls {
     this._tap('tb-crouch', () => this._press('KeyC'));
     this._tap('tb-reload', () => this._press('KeyR'));
     this._tap('tb-pick', () => this._press('KeyE'));
+    this._tap('tb-drive', () => this._press('KeyF'));
     this._tap('tb-heal', () => this._press('KeyH'));
     this._tap('tb-nade', () => this._press('KeyG'));
     this._tap('tb-swap', () => this._press('KeyQ'));
@@ -156,6 +157,7 @@ export class TouchControls {
   }
 
   _setMove(x, y, sprint) {
+    this.input.stick = x || y ? { x, y } : null;
     const keys = this.input.keys;
     const set = (code, on) => (on ? keys.add(code) : keys.delete(code));
     const dead = 0.3;
@@ -164,6 +166,7 @@ export class TouchControls {
     set('KeyA', x < -dead);
     set('KeyD', x > dead);
     set('ShiftLeft', sprint && y < -dead);
+    // while driving the jump button doubles as handbrake (Space)
   }
 
   _releaseAll() {

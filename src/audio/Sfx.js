@@ -156,6 +156,40 @@ export class Sfx {
     this._noise(0.25, { type: 'highpass', freq: 1800, gain: 0.3 });
   }
 
+  /** Looping engine hum; call setSpeed(m/s) every frame, stop() on exit. */
+  engine() {
+    if (!this.ok) return { setSpeed() {}, stop() {} };
+    const c = this.ctx;
+    const o = c.createOscillator();
+    o.type = 'sawtooth';
+    const o2 = c.createOscillator();
+    o2.type = 'square';
+    const f = c.createBiquadFilter();
+    f.type = 'lowpass';
+    f.frequency.value = 500;
+    const g = c.createGain();
+    g.gain.value = 0;
+    g.gain.linearRampToValueAtTime(0.09, c.currentTime + 0.3);
+    o.connect(f);
+    o2.connect(f);
+    f.connect(g).connect(this.master);
+    o.start();
+    o2.start();
+    return {
+      setSpeed: (v) => {
+        const r = Math.min(Math.abs(v) / 24, 1);
+        o.frequency.setTargetAtTime(38 + r * 70, c.currentTime, 0.1);
+        o2.frequency.setTargetAtTime(19 + r * 35, c.currentTime, 0.1);
+        f.frequency.setTargetAtTime(380 + r * 900, c.currentTime, 0.1);
+      },
+      stop: () => {
+        g.gain.setTargetAtTime(0, c.currentTime, 0.1);
+        o.stop(c.currentTime + 0.5);
+        o2.stop(c.currentTime + 0.5);
+      },
+    };
+  }
+
   chute() {
     if (!this.ok) return;
     this._noise(0.35, { type: 'bandpass', freq: 300, freqEnd: 1200, q: 0.8, gain: 0.4 });

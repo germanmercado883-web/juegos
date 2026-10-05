@@ -17,7 +17,7 @@ export class Player {
   constructor(game) {
     this.game = game;
     this.physics = game.world.physics;
-    this.model = new SurvivorModel('player', 'strider');
+    this.model = new SurvivorModel(game.settings.skin || 'player', 'strider');
     this.root = this.model.root;
     this.pos = new THREE.Vector3();
     this.vel = new THREE.Vector3();
@@ -31,12 +31,14 @@ export class Player {
     this.hasBigPack = false;
     this.healing = 0; // seconds remaining
     this.kills = 0;
+    this.stats = { shots: 0, hits: 0, damage: 0, headshots: 0 };
     this.sprinting = false;
     this.aiming = false;
     this.lastDamageAt = -10;
     this.weapons = new PlayerWeapons(this);
     this.crouching = false;
     this.phase = 'ground'; // 'plane' | 'freefall' | 'chute' | 'ground'
+    this.vehicle = null;
     this._stepTimer = 0;
   }
 
@@ -93,6 +95,18 @@ export class Player {
     }
     if (this.phase !== 'ground') {
       this.game.drop.updatePlayer(dt, input, cam, this);
+      return;
+    }
+    if (this.vehicle) {
+      const v = this.vehicle;
+      this.pos.copy(v.seat).setY(v.seat.y - 0.25);
+      this.vel.set(-Math.sin(v.yaw) * v.speed, 0, -Math.cos(v.yaw) * v.speed);
+      this.facing = v.yaw;
+      this.aiming = false;
+      this.sprinting = false;
+      this.root.position.copy(this.pos);
+      this.root.rotation.copy(v.root.rotation);
+      this.model.animate(dt, { speed: 0, grounded: true, crouch: true, pitch: 0, driving: true });
       return;
     }
 

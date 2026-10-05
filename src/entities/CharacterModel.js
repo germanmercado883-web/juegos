@@ -8,6 +8,14 @@ import { buildWeaponModel } from '../weapons/WeaponModels.js';
  * the arms use a tiny two-bone IK so the hands always stay on the gun.
  */
 
+/** Player outfits selectable in the lobby: [palette key, display name]. */
+export const SKINS = [
+  ['player', 'RANGER'],
+  ['dune', 'DUNE RUNNER'],
+  ['nightshift', 'NIGHT SHIFT'],
+  ['frostline', 'FROSTLINE'],
+];
+
 export const PALETTES = {
   player: {
     skin: '#c99a76',
@@ -19,6 +27,39 @@ export const PALETTES = {
     cap: '#3f5670',
     accent: '#d9a441', // amber tabs
     pack: '#6b5a41',
+  },
+  dune: {
+    skin: '#d6a985',
+    shirt: '#c9b48a',
+    vest: '#8a7550',
+    pants: '#7a6a52',
+    boots: '#4a3a2c',
+    gloves: '#3a3026',
+    cap: '#b0905e',
+    accent: '#e8c070',
+    pack: '#6b5a41',
+  },
+  nightshift: {
+    skin: '#b07c5c',
+    shirt: '#2c2f36',
+    vest: '#1f2228',
+    pants: '#25272c',
+    boots: '#18181a',
+    gloves: '#111111',
+    cap: '#b23a2e',
+    accent: '#e0443a',
+    pack: '#2a2c30',
+  },
+  frostline: {
+    skin: '#e0b896',
+    shirt: '#d8dde2',
+    vest: '#8a99a8',
+    pants: '#5d6b7a',
+    boots: '#3a4450',
+    gloves: '#2e3640',
+    cap: '#4f86c6',
+    accent: '#7fc4ff',
+    pack: '#a6b2be',
   },
   rivalB: {
     skin: '#d1a27c',

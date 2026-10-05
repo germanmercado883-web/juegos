@@ -137,7 +137,11 @@ export class PlayerWeapons {
     }
     game.effects.muzzleFlash(muzzle, lastDir, true);
     game.audio.shot(def.sound, 1);
+    player.stats.shots += 1;
     if (totalDmg > 0) {
+      player.stats.hits += 1;
+      player.stats.damage += totalDmg;
+      if (anyHead) player.stats.headshots += 1;
       game.hud.hitMarker(anyHead);
       game.hud.damageNumber(lastHitPoint, totalDmg, anyHead);
       game.audio.hit(anyHead);
