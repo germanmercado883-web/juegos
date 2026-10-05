@@ -156,6 +156,8 @@ export class HUD {
 
     // pickup prompt
     const item = g.loot.nearest(p.pos);
+    document.body.classList.toggle('can-pick', !!(item && p.alive));
+    document.body.classList.toggle('no-meds', p.medkits <= 0);
     if (item && p.alive) {
       e.prompt.classList.add('on');
       this._set('prompt', e.promptText, `PRESIONA E PARA RECOGER — ${item.def.label}`);
@@ -238,6 +240,13 @@ export class HUD {
     this.el.toasts.appendChild(t);
     setTimeout(() => t.remove(), 2600);
     while (this.el.toasts.children.length > 4) this.el.toasts.firstChild.remove();
+  }
+
+  setScope(on) {
+    if (this._scope === on) return;
+    this._scope = on;
+    document.getElementById('scope').classList.toggle('on', on);
+    document.body.classList.toggle('scoped', on);
   }
 
   setDropHint(text) {
@@ -362,6 +371,17 @@ export class HUD {
       g.lineTo((b.x + MAP_HALF) * s, (b.z + MAP_HALF) * s);
       g.stroke();
       g.restore();
+    }
+
+    // supply drops
+    for (const m of this.game.airdrop?.markers() ?? []) {
+      const mx = (m.x + MAP_HALF) * s;
+      const mz = (m.z + MAP_HALF) * s;
+      g.fillStyle = '#ff6a4a';
+      g.strokeStyle = '#1a1a1a';
+      g.lineWidth = 1;
+      g.fillRect(mx - 3.5, mz - 3.5, 7, 7);
+      g.strokeRect(mx - 3.5, mz - 3.5, 7, 7);
     }
 
     // loot pings

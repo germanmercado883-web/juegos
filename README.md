@@ -5,6 +5,16 @@ juegos móviles de ~2018–2019. El mapa, las armas, el loot, la UI y los sonido
 se generan por código. El único asset externo es el esqueleto animado de los
 personajes (ver Créditos), vestido con ropa táctica original.
 
+## Novedades v3
+
+- Lobby 3D en el menú con tu personaje animado.
+- Escopeta M-12 Thunder y francotirador LR-5 Longshot (con mira telescópica);
+  al recoger un arma nueva sueltas la que tenías.
+- Cajas de suministros con paracaídas y humo rojo, marcadas en el minimapa.
+- Móvil: asistencia de apuntado, pantalla completa, resolución adaptativa,
+  vibración y botones que aparecen según el contexto.
+- Eco en los disparos y rivales que reaccionan a los impactos.
+
 ## Novedades v2
 
 - Personajes con esqueleto y animaciones reales (idle, caminar, trotar, sprint,
@@ -35,6 +45,7 @@ Build de producción: `npm run build`, luego `npm run preview` (puerto 4173).
 | Shift | Correr |
 | Espacio | Saltar · en el avión: lanzarse · en caída: abrir paracaídas |
 | C | Agacharse |
+| Clic derecho con francotirador | Mira telescópica |
 | Mouse | Apuntar (clic en el juego para capturar el mouse) |
 | Clic izquierdo | Disparar |
 | Clic derecho | Apuntar con mira (ADS) |

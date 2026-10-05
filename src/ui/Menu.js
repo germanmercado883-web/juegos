@@ -1,7 +1,7 @@
 const $ = (id) => document.getElementById(id);
 
 const IS_TOUCH = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
-const DEFAULTS = { sensitivity: 1, volume: 0.6, quality: IS_TOUCH ? 'low' : 'high', invertY: false };
+const DEFAULTS = { sensitivity: 1, volume: 0.6, quality: IS_TOUCH ? 'low' : 'high', invertY: false, aimAssist: IS_TOUCH };
 const KEY = 'duskvale.settings';
 
 export function loadSettings() {
@@ -65,6 +65,11 @@ export class MenuUI {
     const vol = $('set-vol');
     const q = $('set-quality');
     const inv = $('set-invert');
+    const assist = $('set-assist');
+    assist.checked = s.aimAssist;
+    assist.onchange = () => {
+      s.aimAssist = assist.checked;
+    };
     const refresh = () => {
       $('set-sens-v').textContent = Number(s.sensitivity).toFixed(2);
       $('set-vol-v').textContent = `${Math.round(s.volume * 100)}`;

@@ -10,6 +10,17 @@ async function play() {
   if (busy) return;
   busy = true;
   game.audio.init(); // needs the click gesture
+  if (game.touch && !document.fullscreenElement) {
+    // best effort: some browsers / embedded views refuse fullscreen
+    try {
+      document.documentElement
+        .requestFullscreen?.({ navigationUI: 'hide' })
+        ?.then(() => screen.orientation?.lock?.('landscape'))
+        ?.catch(() => {});
+    } catch {
+      /* ignore */
+    }
+  }
   ui.showLoading();
   try {
     await game.load((p, label) => ui.setProgress(p, label));

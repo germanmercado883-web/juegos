@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { box, flatMat, radialTexture, mergeHierarchy } from '../utils/geometry.js';
-import { buildHornet } from '../weapons/WeaponModels.js';
+import { buildWeaponModel } from '../weapons/WeaponModels.js';
+import { WEAPONS, WEAPON_LOOT } from '../weapons/weaponData.js';
 
 // Loot table: visuals + what each pickup does.
 export const LOOT_TYPES = {
@@ -8,7 +9,10 @@ export const LOOT_TYPES = {
   medkit: { label: 'FIELD MEDKIT', glow: '#7be08a' },
   armor: { label: 'GUARD VEST', glow: '#6fb4ff' },
   backpack: { label: 'TREK PACK', glow: '#c08bff' },
-  smg: { label: 'PX-4 HORNET', glow: '#ffc94a' },
+  smg: { label: 'PX-4 HORNET', glow: '#6fb4ff' },
+  rifle: { label: 'RK-7 STRIDER', glow: '#7be08a' },
+  shotgun: { label: 'M-12 THUNDER', glow: '#c08bff' },
+  sniper: { label: 'LR-5 LONGSHOT', glow: '#ffc94a' },
 };
 
 function buildMesh(type) {
@@ -51,8 +55,8 @@ function buildMesh(type) {
     roll.rotation.z = Math.PI / 2;
     roll.position.y = 0.36;
     g.add(roll);
-  } else if (type === 'smg') {
-    const gun = buildHornet();
+  } else if (WEAPON_LOOT[type]) {
+    const gun = buildWeaponModel(WEAPON_LOOT[type]);
     gun.rotation.y = Math.PI / 2;
     gun.scale.setScalar(1.3);
     g.add(gun);
@@ -162,10 +166,16 @@ export class LootManager {
         msg = 'TREK PACK — AMMO CAP 240';
         break;
       case 'smg':
-        w.give('hornet');
-        w.reserve = Math.min(player.maxReserve, w.reserve + 32);
-        msg = 'PX-4 HORNET EQUIPPED  [1/2 SWAP]';
+      case 'rifle':
+      case 'shotgun':
+      case 'sniper': {
+        const id = WEAPON_LOOT[item.type];
+        const dropped = w.give(id);
+        w.reserve = Math.min(player.maxReserve, w.reserve + 20);
+        if (dropped) this.spawn(dropped, player.pos.x + 0.9, player.pos.z + 0.6);
+        msg = `${WEAPONS[id].name} EQUIPPED`;
         break;
+      }
       default:
         return null;
     }

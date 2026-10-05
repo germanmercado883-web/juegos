@@ -70,6 +70,7 @@ export class Player {
     }
     this.health = Math.max(0, this.health - dmg);
     this.lastDamageAt = this.game.time;
+    if (!ignoreArmor) this.game.haptic(30);
     this.healing = 0;
     if (this.health <= 0) {
       this.alive = false;

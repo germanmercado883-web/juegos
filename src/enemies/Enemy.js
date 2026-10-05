@@ -78,6 +78,7 @@ export class Enemy {
       return;
     }
     this.state = STATE.ALERT;
+    this.model.flinch = 1;
     this.lastSeen = this.game.time;
     this.burstTimer = Math.min(this.burstTimer, 0.6);
     if (this.health <= 0) this.die();

@@ -157,6 +157,7 @@ export class SurvivorModel {
     this.gunPivot = new THREE.Group();
     this.root.add(this.gunPivot);
     this.recoil = 0;
+    this.flinch = 0;
     this.dead = false;
     this.setWeapon(weaponId);
   }
@@ -290,7 +291,8 @@ export class SurvivorModel {
     // bend the upper spine towards the aim pitch (around the body's right axis)
     const right = new THREE.Vector3(1, 0, 0).applyQuaternion(this.root.getWorldQuaternion(new THREE.Quaternion()));
     rotateBoneWorld(this.bones.spine002, right, pitch * 0.35);
-    rotateBoneWorld(this.bones.spine003, right, pitch * 0.35);
+    rotateBoneWorld(this.bones.spine003, right, pitch * 0.35 + this.flinch * 0.5);
+    this.flinch = Math.max(0, this.flinch - dt * 4);
     this.inner.updateMatrixWorld(true);
 
     // place the gun at the right side of the chest, pointing where we aim

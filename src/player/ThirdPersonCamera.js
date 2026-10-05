@@ -33,31 +33,33 @@ export class ThirdPersonCamera {
     return out.set(-Math.sin(this.yaw) * cp, Math.sin(this.pitch), -Math.cos(this.yaw) * cp);
   }
 
-  update(dt, input, target, settings, aiming, crouching = false) {
-    const sens = 0.0022 * settings.sensitivity * (aiming ? 0.6 : 1);
+  update(dt, input, target, settings, aiming, crouching = false, scoped = false) {
+    const sens = 0.0022 * settings.sensitivity * (scoped ? 0.22 : aiming ? 0.6 : 1);
     this.yaw -= input.mouse.dx * sens;
     this.pitch = clamp(this.pitch - input.mouse.dy * sens * (settings.invertY ? -1 : 1), -1.2, 1.1);
     if (input.mouse.wheel) this.distance = clamp(this.distance + input.mouse.wheel * 0.5, this.minDist, Math.max(this.maxDist, this.distance));
 
     this.aimBlend = lerp(this.aimBlend, aiming ? 1 : 0, damp(14, dt));
+    this.scopeBlend = scoped ? 1 : 0;
 
     // pivot: above the right shoulder
     const right = new THREE.Vector3(Math.cos(this.yaw), 0, -Math.sin(this.yaw));
     this.crouchBlend = lerp(this.crouchBlend || 0, crouching ? 1 : 0, damp(10, dt));
     const desiredPivot = new THREE.Vector3(target.x, target.y + 1.62 - this.crouchBlend * 0.5, target.z)
-      .addScaledVector(right, lerp(0.6, 0.85, this.aimBlend));
+      .addScaledVector(right, scoped ? 0.05 : lerp(0.6, 0.85, this.aimBlend));
     if (this.pivot.lengthSq() === 0) this.pivot.copy(desiredPivot);
     this.pivot.lerp(desiredPivot, damp(22, dt));
 
     const fwd = this.forward();
-    let dist = lerp(this.distance, 2.3, this.aimBlend);
+    let dist = scoped ? 0.05 : lerp(this.distance, 2.3, this.aimBlend);
+    if (scoped) this.pivot.copy(desiredPivot);
 
     // collision: pull the camera in front of anything between pivot and camera
     const back = fwd.clone().negate();
     const hit = this.physics.raycast(this.pivot, back, dist + 0.3, { hitTargets: false });
     if (hit) dist = Math.max(0.6, Math.min(dist, hit.dist - 0.3));
     // ease out when the obstacle disappears, snap in when it appears
-    this.currentDist = dist < this.currentDist ? dist : lerp(this.currentDist, dist, damp(6, dt));
+    this.currentDist = dist < this.currentDist || scoped ? dist : lerp(this.currentDist, dist, damp(6, dt));
 
     const pos = this.pivot.clone().addScaledVector(back, this.currentDist);
     const ground = this.physics.terrain.groundAt(pos.x, pos.z) + 0.35;
@@ -71,7 +73,7 @@ export class ThirdPersonCamera {
 
     this.camera.position.copy(pos);
     this.camera.rotation.set(this.pitch, this.yaw, 0);
-    const fov = lerp(this.baseFov, this.baseFov - 20, this.aimBlend);
+    const fov = scoped ? 14 : lerp(this.baseFov, this.baseFov - 20, this.aimBlend);
     if (Math.abs(this.camera.fov - fov) > 0.01) {
       this.camera.fov = fov;
       this.camera.updateProjectionMatrix();

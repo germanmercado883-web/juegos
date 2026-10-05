@@ -202,7 +202,7 @@ function buildPlane() {
   return g;
 }
 
-function buildCanopy() {
+export function buildCanopy() {
   const g = new THREE.Group();
   const geo = new THREE.SphereGeometry(3.4, 12, 4, 0, Math.PI * 2, 0, Math.PI / 2.6).toNonIndexed();
   geo.scale(1.25, 0.55, 0.8);

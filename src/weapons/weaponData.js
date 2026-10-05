@@ -33,4 +33,42 @@ export const WEAPONS = {
     range: 140,
     sound: { pitch: 1.35, body: 0.6 },
   },
+  thunder: {
+    id: 'thunder',
+    name: 'M-12 THUNDER',
+    kind: 'SHOTGUN',
+    damage: 12,
+    pellets: 8,
+    headMult: 1.4,
+    fireRate: 1.3,
+    magSize: 6,
+    reloadTime: 2.4,
+    spreadHip: 0.07,
+    spreadAim: 0.05,
+    recoilPitch: 0.05,
+    recoilYaw: 0.01,
+    range: 45,
+    sound: { pitch: 0.7, body: 1.4 },
+  },
+  longshot: {
+    id: 'longshot',
+    name: 'LR-5 LONGSHOT',
+    kind: 'SNIPER',
+    damage: 78,
+    headMult: 2.0,
+    fireRate: 0.75,
+    magSize: 5,
+    reloadTime: 2.8,
+    spreadHip: 0.06,
+    spreadAim: 0.0004,
+    recoilPitch: 0.06,
+    recoilYaw: 0.006,
+    range: 400,
+    scope: true,
+    sound: { pitch: 0.8, body: 1.6 },
+  },
 };
+
+/** Loot type -> weapon id. */
+export const WEAPON_LOOT = { smg: 'hornet', shotgun: 'thunder', sniper: 'longshot', rifle: 'strider' };
+export const LOOT_FOR_WEAPON = { hornet: 'smg', thunder: 'shotgun', longshot: 'sniper', strider: 'rifle' };

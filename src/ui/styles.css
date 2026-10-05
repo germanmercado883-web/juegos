@@ -348,3 +348,33 @@ body.touch .drop-hint { bottom: 40%; font-size: 16px; }
   .panel { padding: 16px 20px; min-width: 320px; gap: 8px; }
   .end-rank { font-size: 64px; }
 }
+
+/* ---------- sniper scope ---------- */
+.scope { position: absolute; inset: 0; display: none; pointer-events: none; }
+.scope.on { display: block; }
+.scope-ring {
+  position: absolute; left: 50%; top: 50%; width: 92vmin; height: 92vmin; transform: translate(-50%, -50%); border-radius: 50%;
+  box-shadow: 0 0 0 200vmax #07090b, inset 0 0 40px 10px rgba(0,0,0,0.85);
+  border: 3px solid #111;
+}
+.scope .sh, .scope .sv { position: absolute; background: rgba(10, 10, 10, 0.85); }
+.scope .sh { left: 4vw; right: 4vw; top: 50%; height: 1.5px; }
+.scope .sv { top: 4vh; bottom: 4vh; left: 50%; width: 1.5px; }
+body.scoped .crosshair { opacity: 0; }
+
+body.touch .tb-pick { display: none; }
+body.touch.can-pick .tb-pick { display: block; animation: blink 1s infinite; }
+body.touch.can-pick .prompt { display: none; }
+body.no-meds .tb-heal { opacity: 0.35; }
+
+/* ---------- 3D lobby behind the main menu ---------- */
+body.lobby-ready #menu { justify-content: flex-start; }
+body.lobby-ready #menu .menu-bg { display: none; }
+body.lobby-ready #menu::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(90deg, rgba(8, 12, 16, 0.62) 0%, rgba(8, 12, 16, 0.25) 45%, transparent 65%);
+}
+body.lobby-ready .menu-content { align-items: flex-start; text-align: left; padding-left: max(24px, 6vw); gap: 30px; }
+body.lobby-ready .logo h1 { font-size: clamp(56px, 9vw, 120px); }
+body.lobby-ready .menu-buttons { width: 260px; }
+body.scoped .hud-top, body.scoped .hud-left, body.scoped .hud-right, body.scoped .minimap, body.scoped .killfeed, body.scoped .toasts { opacity: 0; }

@@ -75,6 +75,54 @@ export function buildHornet() {
   return anchors(g, -0.5, new THREE.Vector3(0, -0.03, -0.3));
 }
 
+export function buildThunder() {
+  const g = new THREE.Group();
+  const dark = '#2b2d30';
+  const wood = '#7a5232';
+  const add = (m, x, y, z) => {
+    m.position.set(x, y, z);
+    g.add(m);
+    return m;
+  };
+  add(box(0.08, 0.1, 0.3, dark), 0, 0.05, -0.08);
+  add(cyl(0.028, 0.62, dark), 0, 0.08, -0.52);
+  add(cyl(0.024, 0.5, '#3a3d40'), 0, 0.03, -0.46); // tube magazine
+  add(box(0.075, 0.07, 0.24, wood), 0, 0.02, -0.42); // pump
+  const grip = add(box(0.05, 0.12, 0.06, wood), 0, -0.03, 0.04);
+  grip.rotation.x = -0.35;
+  add(box(0.06, 0.11, 0.3, wood), 0, 0.02, 0.24);
+  add(box(0.065, 0.13, 0.04, '#1e1e1e'), 0, 0.01, 0.4);
+  return anchors(g, -0.84, new THREE.Vector3(0, -0.01, -0.42));
+}
+
+export function buildLongshot() {
+  const g = new THREE.Group();
+  const body = '#4a5a3e';
+  const dark = '#24272a';
+  const add = (m, x, y, z) => {
+    m.position.set(x, y, z);
+    g.add(m);
+    return m;
+  };
+  add(box(0.075, 0.1, 0.5, body), 0, 0.05, -0.12);
+  add(cyl(0.018, 0.7, dark), 0, 0.07, -0.72);
+  add(box(0.04, 0.04, 0.1, dark), 0, 0.07, -1.08);
+  add(cyl(0.035, 0.34, dark, 8), 0, 0.17, -0.14); // scope
+  add(cyl(0.045, 0.05, '#1a1d20', 8), 0, 0.17, -0.32);
+  add(box(0.03, 0.05, 0.03, dark), 0, 0.12, -0.08);
+  add(box(0.03, 0.05, 0.03, dark), 0, 0.12, -0.22);
+  const mag = add(box(0.05, 0.12, 0.08, dark), 0, -0.04, -0.1);
+  mag.rotation.x = 0.1;
+  const grip = add(box(0.05, 0.12, 0.06, dark), 0, -0.03, 0.04);
+  grip.rotation.x = -0.3;
+  add(box(0.06, 0.12, 0.34, body), 0, 0.03, 0.26);
+  add(box(0.02, 0.18, 0.02, dark), 0.03, -0.06, -0.5).rotation.x = 0.4; // bipod leg
+  return anchors(g, -1.14, new THREE.Vector3(0, -0.02, -0.42));
+}
+
 export function buildWeaponModel(id) {
-  return id === 'hornet' ? buildHornet() : buildStrider();
+  if (id === 'hornet') return buildHornet();
+  if (id === 'thunder') return buildThunder();
+  if (id === 'longshot') return buildLongshot();
+  return buildStrider();
 }

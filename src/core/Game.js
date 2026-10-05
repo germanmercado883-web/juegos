@@ -11,8 +11,11 @@ import { Sfx } from '../audio/Sfx.js';
 import { HUD } from '../ui/HUD.js';
 import { DropSequence } from '../systems/DropSequence.js';
 import { PostFX } from '../systems/PostFX.js';
+import { Airdrop } from '../systems/Airdrop.js';
+import { Lobby } from '../ui/Lobby.js';
 import { preloadSurvivor } from '../entities/SurvivorModel.js';
 import { TouchControls, isTouchDevice } from '../ui/TouchControls.js';
+import { angleDiff } from '../utils/math.js';
 import { ENEMY_SPAWNS, LOOT_SPAWNS, PLAYER_SPAWN } from '../world/mapLayout.js';
 
 const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
@@ -58,6 +61,7 @@ export class Game {
     });
 
     this.touch = isTouchDevice() ? new TouchControls(this) : null;
+    this.lobby = new Lobby(this.renderer);
 
     this._last = performance.now();
     this.renderer.setAnimationLoop(() => this._frame());
@@ -101,7 +105,10 @@ export class Game {
       steps.push(...this.world.steps());
       steps.push(['TRAINING SURVIVORS', () => preloadSurvivor()]);
       steps.push(['CALIBRATING SAFE ZONE', () => (this.zone = new SafeZone(this.scene, this.world.terrain))]);
-      steps.push(['FUELING THE PLANE', () => (this.drop = new DropSequence(this))]);
+      steps.push(['FUELING THE PLANE', () => {
+        this.drop = new DropSequence(this);
+        this.airdrop = new Airdrop(this);
+      }]);
       steps.push(['GRADING COLORS', () => {
         this.postfx = new PostFX(this.renderer, this.scene, this.camera);
         this._resize();
@@ -158,10 +165,15 @@ export class Game {
     for (const [type, x, z] of LOOT_SPAWNS) this.loot.spawn(type, x, z);
 
     this.zone.reset();
+    this.airdrop.reset();
     this.zone.onEvent = (e) => {
       if (e === 'shrink') this.hud.toast('THE ZONE IS CLOSING!', 'warn');
-      else this.hud.toast('NEW SAFE ZONE MARKED ON MAP');
+      else {
+        this.hud.toast('NEW SAFE ZONE MARKED ON MAP');
+        if (this.zone.phase <= 2) this.airdrop.spawn();
+      }
     };
+    this._firstDropAt = 35; // seconds after landing
     this.matchTime = 0;
     // place the camera once so the first rendered frame is correct
     this.cam.update(0.016, this.input, this.player.pos, this.settings, false);
@@ -219,6 +231,7 @@ export class Game {
       this.hud.killBanner(remaining > 0 ? `${remaining} RIVAL${remaining === 1 ? '' : 'S'} LEFT` : 'VALLEY CLEARED');
       this.hud.killFeed('YOU', enemy.name, this.player.weapons.active.def.name);
       this.audio.eliminate();
+      this.haptic([20, 40, 30]);
     } else {
       this.hud.killFeed('ZONE', enemy.name, null);
     }
@@ -254,11 +267,75 @@ export class Game {
     });
   }
 
+  /** Short vibration on phones that support it. */
+  haptic(pattern) {
+    if (!this.touch) return;
+    try {
+      navigator.vibrate?.(pattern);
+    } catch {
+      /* not supported */
+    }
+  }
+
+  /**
+   * Touch-friendly aim assist: while firing or aiming, gently pull the
+   * crosshair towards a visible rival close to it.
+   */
+  _aimAssist(dt) {
+    const p = this.player;
+    if (!this.settings.aimAssist || p.phase !== 'ground' || !p.alive) return;
+    if (!this.input.mouse.left && !p.aiming) return;
+    const cam = this.cam;
+    const from = this.camera.position;
+    const fwd = cam.forward();
+    let best = null;
+    let bestAng = 0.14;
+    for (const e of this.enemies) {
+      if (!e.alive) continue;
+      const t = { x: e.pos.x, y: e.pos.y + (e.model ? 1.25 : 1.2), z: e.pos.z };
+      const dx = t.x - from.x;
+      const dy = t.y - from.y;
+      const dz = t.z - from.z;
+      const d = Math.hypot(dx, dy, dz);
+      if (d > 110) continue;
+      const ang = Math.acos(Math.min(1, (dx * fwd.x + dy * fwd.y + dz * fwd.z) / d));
+      if (ang < bestAng && this.world.physics.lineOfSight(from, t)) {
+        bestAng = ang;
+        best = { dx, dy, dz };
+      }
+    }
+    if (!best) return;
+    const k = Math.min(1, dt * (p.aiming ? 7 : 4.5));
+    const yaw = Math.atan2(-best.dx, -best.dz);
+    const pitch = Math.atan2(best.dy, Math.hypot(best.dx, best.dz));
+    cam.yaw += angleDiff(cam.yaw, yaw) * k;
+    cam.pitch += (pitch - cam.pitch) * k;
+  }
+
+  /** Lower/raise the render resolution to hold a smooth frame rate. */
+  _adaptResolution(dt) {
+    this._ema = this._ema === undefined ? dt : this._ema * 0.95 + dt * 0.05;
+    this._resTimer = (this._resTimer || 0) + dt;
+    if (this._resTimer < 1.5 || this.state !== 'playing') return;
+    this._resTimer = 0;
+    const dpr = window.devicePixelRatio || 1;
+    const max = this.quality.high ? Math.min(dpr, 2) : Math.min(dpr, 1.25);
+    const pr = this.renderer.getPixelRatio();
+    let next = pr;
+    if (this._ema > 1 / 38) next = Math.max(0.5, pr - 0.15);
+    else if (this._ema < 1 / 56) next = Math.min(max, pr + 0.1);
+    if (Math.abs(next - pr) > 0.01) {
+      this.renderer.setPixelRatio(next);
+      this._resize();
+    }
+  }
+
   // ------------------------------------------------------------ loop
   _frame() {
     const now = performance.now();
     const dt = Math.min((now - this._last) / 1000, 0.05);
     this._last = now;
+    this._adaptResolution(dt);
     if (this.state === 'playing') this._update(dt);
     else if (this.state === 'ended' && this.world) {
       // keep the world alive behind the end screen
@@ -268,7 +345,9 @@ export class Game {
       this.player.update(dt, this.input, this.cam);
       this.input.endFrame();
     }
-    if (this.world && this.cam && this.state !== 'loading' && this.state !== 'menu') {
+    if (this.state === 'menu' || (this.state === 'loading' && !this.world?.sun)) {
+      this.lobby.render(dt);
+    } else if (this.world && this.cam && this.state !== 'loading') {
       this.world.update(dt, this.time, this.player.pos, this.camera.position);
       if (this.postfx && this.quality.high) this.postfx.render();
       else this.renderer.render(this.scene, this.camera);
@@ -298,7 +377,11 @@ export class Game {
 
     this.drop.update(dt);
     player.update(dt, input, this.cam);
-    this.cam.update(dt, input, player.pos, this.settings, player.aiming, player.crouching);
+    this._aimAssist(dt);
+    const scoped = player.aiming && !!player.weapons.active.def.scope && player.phase === 'ground';
+    player.root.visible = !scoped && player.phase !== 'plane';
+    this.cam.update(dt, input, player.pos, this.settings, player.aiming, player.crouching, scoped);
+    this.hud.setScope(scoped);
 
     this.enemies = this.enemies.filter((e) => {
       const keep = e.update(dt, player);
@@ -306,6 +389,14 @@ export class Game {
       return keep;
     });
     this.loot.update(dt);
+    this.airdrop.update(dt);
+    if (this.zone.running && this._firstDropAt !== null) {
+      this._firstDropAt -= dt;
+      if (this._firstDropAt <= 0) {
+        this._firstDropAt = null;
+        this.airdrop.spawn();
+      }
+    }
     this.zone.update(dt, this.time, player, this);
     this.effects.update(dt);
     this.hud.update(dt);

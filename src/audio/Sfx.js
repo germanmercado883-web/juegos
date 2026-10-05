@@ -25,6 +25,20 @@ export class Sfx {
     this.noise = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
     const d = this.noise.getChannelData(0);
     for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    // outdoor slap-back: decaying noise impulse on a send bus
+    const ir = this.ctx.createBuffer(2, this.ctx.sampleRate * 1.6, this.ctx.sampleRate);
+    for (let ch = 0; ch < 2; ch++) {
+      const data = ir.getChannelData(ch);
+      for (let i = 0; i < data.length; i++) {
+        const t = i / data.length;
+        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - t, 3.2) * (i < 900 ? 0.2 : 1);
+      }
+    }
+    const conv = this.ctx.createConvolver();
+    conv.buffer = ir;
+    this.wet = this.ctx.createGain();
+    this.wet.gain.value = 0.32;
+    this.wet.connect(conv).connect(this.master);
   }
 
   setVolume(v) {
@@ -32,7 +46,7 @@ export class Sfx {
     if (this.master) this.master.gain.value = v;
   }
 
-  _noise(dur, { type = 'lowpass', freq = 2000, q = 0.7, gain = 0.5, attack = 0.002, when = 0, freqEnd = null } = {}) {
+  _noise(dur, { type = 'lowpass', freq = 2000, q = 0.7, gain = 0.5, attack = 0.002, when = 0, freqEnd = null, wet = false } = {}) {
     const c = this.ctx;
     const t = c.currentTime + when;
     const src = c.createBufferSource();
@@ -48,11 +62,12 @@ export class Sfx {
     g.gain.exponentialRampToValueAtTime(gain, t + attack);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     src.connect(f).connect(g).connect(this.master);
+    if (wet && this.wet) g.connect(this.wet);
     src.start(t, Math.random() * 0.5);
     src.stop(t + dur + 0.05);
   }
 
-  _tone(freq, dur, { type = 'sine', gain = 0.3, freqEnd = null, when = 0, attack = 0.005 } = {}) {
+  _tone(freq, dur, { type = 'sine', gain = 0.3, freqEnd = null, when = 0, attack = 0.005, wet = false } = {}) {
     const c = this.ctx;
     const t = c.currentTime + when;
     const o = c.createOscillator();
@@ -64,6 +79,7 @@ export class Sfx {
     g.gain.exponentialRampToValueAtTime(gain, t + attack);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     o.connect(g).connect(this.master);
+    if (wet && this.wet) g.connect(this.wet);
     o.start(t);
     o.stop(t + dur + 0.05);
   }
@@ -75,15 +91,15 @@ export class Sfx {
   shot(profile = { pitch: 1, body: 1 }, vol = 1) {
     if (!this.ok) return;
     const p = profile.pitch;
-    this._noise(0.16 / p, { freq: 3800 * p, freqEnd: 500, gain: 0.55 * vol });
+    this._noise(0.16 / p, { freq: 3800 * p, freqEnd: 500, gain: 0.55 * vol, wet: true });
     this._noise(0.05, { type: 'highpass', freq: 2500, gain: 0.35 * vol });
-    this._tone(140 * p, 0.12, { type: 'triangle', freqEnd: 45, gain: 0.5 * profile.body * vol });
+    this._tone(140 * p, 0.12 * profile.body, { type: 'triangle', freqEnd: 45, gain: 0.5 * profile.body * vol, wet: true });
   }
 
   enemyShot(distance) {
     if (!this.ok) return;
     const vol = Math.max(0.05, 1 - distance / 120) * 0.55;
-    this._noise(0.22, { freq: 1600, freqEnd: 300, gain: vol });
+    this._noise(0.22, { freq: 1600, freqEnd: 300, gain: vol, wet: true });
     this._tone(110, 0.14, { type: 'triangle', freqEnd: 40, gain: vol * 0.6 });
   }
 
