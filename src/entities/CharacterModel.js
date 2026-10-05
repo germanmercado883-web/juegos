@@ -20,10 +20,32 @@ export const PALETTES = {
     accent: '#d9a441', // amber tabs
     pack: '#6b5a41',
   },
+  rivalB: {
+    skin: '#d1a27c',
+    shirt: '#a8946a', // desert tan
+    vest: '#6b5f45',
+    pants: '#5c5546',
+    boots: '#3b3026',
+    gloves: '#2a2622',
+    cap: '#7a6a4a',
+    accent: '#e0c070',
+    pack: '#5a4a3c',
+  },
+  rivalC: {
+    skin: '#a87458',
+    shirt: '#3f5266', // navy
+    vest: '#2f3d4c',
+    pants: '#3b3f46',
+    boots: '#2a2420',
+    gloves: '#222222',
+    cap: '#26323e',
+    accent: '#d0d6dc',
+    pack: '#4a4a44',
+  },
   rival: {
     skin: '#b98766',
-    shirt: '#8d5444',
-    vest: '#5e4a40',
+    shirt: '#7a2c28', // crimson jacket
+    vest: '#3f3b37',
     pants: '#4a423c',
     boots: '#2a2420',
     gloves: '#2a2222',

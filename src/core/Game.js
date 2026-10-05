@@ -9,6 +9,9 @@ import { SafeZone } from '../systems/SafeZone.js';
 import { Effects } from '../systems/Effects.js';
 import { Sfx } from '../audio/Sfx.js';
 import { HUD } from '../ui/HUD.js';
+import { DropSequence } from '../systems/DropSequence.js';
+import { PostFX } from '../systems/PostFX.js';
+import { preloadSurvivor } from '../entities/SurvivorModel.js';
 import { ENEMY_SPAWNS, LOOT_SPAWNS, PLAYER_SPAWN } from '../world/mapLayout.js';
 
 const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
@@ -80,6 +83,7 @@ export class Game {
     const w = window.innerWidth;
     const h = window.innerHeight;
     this.renderer.setSize(w, h, false);
+    this.postfx?.setSize(w, h, this.renderer.getPixelRatio());
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
   }
@@ -92,7 +96,13 @@ export class Game {
     if (!this.world) {
       this.world = new World(this.scene, this.quality);
       steps.push(...this.world.steps());
-      steps.push(['CALIBRATING SAFE ZONE', () => (this.zone = new SafeZone(this.scene))]);
+      steps.push(['TRAINING SURVIVORS', () => preloadSurvivor()]);
+      steps.push(['CALIBRATING SAFE ZONE', () => (this.zone = new SafeZone(this.scene, this.world.terrain))]);
+      steps.push(['FUELING THE PLANE', () => (this.drop = new DropSequence(this))]);
+      steps.push(['GRADING COLORS', () => {
+        this.postfx = new PostFX(this.renderer, this.scene, this.camera);
+        this._resize();
+      }]);
       steps.push(['WARMING UP EFFECTS', () => (this.effects = new Effects(this.scene))]);
       steps.push(['BUILDING HUD', () => (this.hud = new HUD(this))]);
     }
@@ -103,7 +113,7 @@ export class Game {
       const [label, fn] = steps[i];
       onProgress(i / steps.length, label);
       await nextFrame();
-      fn();
+      await fn();
     }
     // keep the bar on screen long enough to read, even on fast machines
     const minTime = 1800;
@@ -144,7 +154,11 @@ export class Game {
     this.loot = new LootManager(this);
     for (const [type, x, z] of LOOT_SPAWNS) this.loot.spawn(type, x, z);
 
-    this.zone.outsideTime = 0;
+    this.zone.reset();
+    this.zone.onEvent = (e) => {
+      if (e === 'shrink') this.hud.toast('THE ZONE IS CLOSING!', 'warn');
+      else this.hud.toast('NEW SAFE ZONE MARKED ON MAP');
+    };
     this.matchTime = 0;
     // place the camera once so the first rendered frame is correct
     this.cam.update(0.016, this.input, this.player.pos, this.settings, false);
@@ -159,6 +173,7 @@ export class Game {
     this.hud.setClickToPlay(!this.input.locked);
     this.input.requestLock();
     this.audio.startAmbience();
+    this.drop.begin(this.player);
     this._last = performance.now();
   }
 
@@ -189,12 +204,17 @@ export class Game {
   }
 
   // ------------------------------------------------------------ events
-  onEnemyKilled(enemy) {
+  onEnemyKilled(enemy, byPlayer = true) {
     this.aliveCount -= 1;
-    this.player.kills += 1;
     const remaining = this.aliveCount - 1;
-    this.hud.killBanner(remaining > 0 ? `${remaining} RIVAL${remaining === 1 ? '' : 'S'} LEFT` : 'VALLEY CLEARED');
-    this.audio.eliminate();
+    if (byPlayer) {
+      this.player.kills += 1;
+      this.hud.killBanner(remaining > 0 ? `${remaining} RIVAL${remaining === 1 ? '' : 'S'} LEFT` : 'VALLEY CLEARED');
+      this.hud.killFeed('YOU', enemy.name, this.player.weapons.active.def.name);
+      this.audio.eliminate();
+    } else {
+      this.hud.killFeed('ZONE', enemy.name, null);
+    }
     // rivals drop a little something
     const drop = Math.random() < 0.5 ? 'ammo' : enemy.index % 2 ? 'medkit' : 'armor';
     this.loot.spawn(drop, enemy.pos.x + 0.8, enemy.pos.z + 0.4);
@@ -242,7 +262,8 @@ export class Game {
     }
     if (this.world && this.cam && this.state !== 'loading' && this.state !== 'menu') {
       this.world.update(dt, this.time, this.player.pos, this.camera.position);
-      this.renderer.render(this.scene, this.camera);
+      if (this.postfx && this.quality.high) this.postfx.render();
+      else this.renderer.render(this.scene, this.camera);
     }
   }
 
@@ -267,8 +288,9 @@ export class Game {
       if (!player.startHeal() && player.medkits === 0) this.hud.toast('NO MEDKITS', 'warn');
     }
 
+    this.drop.update(dt);
     player.update(dt, input, this.cam);
-    this.cam.update(dt, input, player.pos, this.settings, player.aiming);
+    this.cam.update(dt, input, player.pos, this.settings, player.aiming, player.crouching);
 
     this.enemies = this.enemies.filter((e) => {
       const keep = e.update(dt, player);

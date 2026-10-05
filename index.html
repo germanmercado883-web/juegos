@@ -72,9 +72,13 @@
           <div class="pill"><span class="pill-k">KILLS</span> <b id="hud-kills">0</b></div>
           <div class="pill zone-pill" id="hud-zone"><span class="zone-dot"></span><span id="hud-zone-text">IN SAFE ZONE</span></div>
         </div>
+        <div class="zone-timer" id="hud-zone-timer"></div>
       </div>
 
       <div class="minimap"><canvas id="minimap" width="180" height="180"></canvas><div class="minimap-label">DUSKVALE VALLEY</div></div>
+      <div class="killfeed" id="killfeed"></div>
+      <div class="drop-hint" id="drop-hint"></div>
+      <div class="altimeter" id="altimeter"><span>ALT</span><b id="alt-value">0</b><em>m</em></div>
 
       <div class="hud-left">
         <div class="stat">
@@ -120,7 +124,7 @@
         <div class="tut-title">CONTROLS</div>
         <div><span class="key">W A S D</span> MOVE</div>
         <div><span class="key">SHIFT</span> SPRINT</div>
-        <div><span class="key">SPACE</span> JUMP</div>
+        <div><span class="key">SPACE</span> JUMP · <span class="key">C</span> CROUCH</div>
         <div><span class="key">MOUSE</span> AIM · <span class="key">RMB</span> ADS</div>
         <div><span class="key">LEFT CLICK</span> SHOOT</div>
         <div><span class="key">E</span> PICK UP</div>

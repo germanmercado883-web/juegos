@@ -44,6 +44,11 @@ export class HUD {
       clickToPlay: $('click-to-play'),
       compass: $('compass-strip'),
       minimap: $('minimap'),
+      zoneTimer: $('hud-zone-timer'),
+      killfeed: $('killfeed'),
+      dropHint: $('drop-hint'),
+      altimeter: $('altimeter'),
+      altValue: $('alt-value'),
     };
     this.cache = {};
     this.gap = 7;
@@ -62,6 +67,9 @@ export class HUD {
   reset() {
     this.cache = {};
     this.el.toasts.innerHTML = '';
+    this.el.killfeed.innerHTML = '';
+    this.setDropHint('');
+    this.setAltitude(null);
     this.el.dmgNumbers.innerHTML = '';
     this.el.killBanner.classList.remove('on');
     this.el.tutorial.classList.remove('fade');
@@ -121,15 +129,22 @@ export class HUD {
 
     // zone indicator
     const out = g.zone.distanceOutside(p.pos);
-    if (out > 0) {
+    if (out > 0 && p.phase === 'ground') {
       this._set('zone', e.zoneText, `OUTSIDE ZONE · ${Math.ceil(out)}m`);
       e.zone.classList.add('outside');
       e.zoneVignette.classList.add('on');
+    } else if (p.phase !== 'ground') {
+      this._set('zone', e.zoneText, 'DROPPING IN');
+      e.zone.classList.remove('outside');
+      e.zoneVignette.classList.remove('on');
     } else {
       this._set('zone', e.zoneText, `IN SAFE ZONE · ${Math.floor(-out)}m TO EDGE`);
       e.zone.classList.remove('outside');
       e.zoneVignette.classList.remove('on');
     }
+
+    this._set('zoneTimer', e.zoneTimer, g.zone.running ? g.zone.status : 'ZONE ACTIVE AFTER LANDING');
+    e.zoneTimer.classList.toggle('shrinking', g.zone.state === 'shrink');
 
     // crosshair spread
     const speed = Math.hypot(p.vel.x, p.vel.z);
@@ -225,6 +240,33 @@ export class HUD {
     while (this.el.toasts.children.length > 4) this.el.toasts.firstChild.remove();
   }
 
+  setDropHint(text) {
+    this.el.dropHint.textContent = text;
+    this.el.dropHint.classList.toggle('on', !!text);
+  }
+
+  setAltitude(meters) {
+    this.el.altimeter.classList.toggle('on', meters !== null);
+    if (meters !== null) this._set('alt', this.el.altValue, String(meters));
+  }
+
+  killFeed(killer, victim, weapon) {
+    const row = document.createElement('div');
+    row.className = 'kf';
+    const k = document.createElement('span');
+    k.className = killer === 'YOU' ? 'you' : 'zone';
+    k.textContent = killer;
+    const w = document.createElement('span');
+    w.className = 'gun';
+    w.textContent = weapon ? `[${weapon}]` : '[ZONE]';
+    const v = document.createElement('span');
+    v.textContent = victim;
+    row.append(k, w, v);
+    this.el.killfeed.appendChild(row);
+    setTimeout(() => row.remove(), 5000);
+    while (this.el.killfeed.children.length > 5) this.el.killfeed.firstChild.remove();
+  }
+
   setClickToPlay(on) {
     this.el.clickToPlay.classList.toggle('on', on);
   }
@@ -298,6 +340,29 @@ export class HUD {
     g.arc((z.center.x + MAP_HALF) * s, (z.center.y + MAP_HALF) * s, z.radius * s, 0, Math.PI * 2);
     g.stroke();
     g.restore();
+    if (z.next && z.state !== 'done') {
+      g.save();
+      g.strokeStyle = 'rgba(255,255,255,0.95)';
+      g.setLineDash([4, 3]);
+      g.lineWidth = 1.2;
+      g.beginPath();
+      g.arc((z.next.center.x + MAP_HALF) * s, (z.next.center.y + MAP_HALF) * s, z.next.radius * s, 0, Math.PI * 2);
+      g.stroke();
+      g.restore();
+    }
+    const drop = this.game.drop;
+    if (drop?.active) {
+      g.save();
+      g.strokeStyle = 'rgba(255, 200, 80, 0.8)';
+      g.setLineDash([2, 3]);
+      g.beginPath();
+      const a = drop.start;
+      const b = drop.start.clone().addScaledVector(drop.dir, drop.length);
+      g.moveTo((a.x + MAP_HALF) * s, (a.z + MAP_HALF) * s);
+      g.lineTo((b.x + MAP_HALF) * s, (b.z + MAP_HALF) * s);
+      g.stroke();
+      g.restore();
+    }
 
     // loot pings
     g.fillStyle = 'rgba(255, 220, 120, 0.85)';

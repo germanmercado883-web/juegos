@@ -133,6 +133,12 @@ export class Sfx {
     this._noise(0.18, { type: 'bandpass', freq: 500, freqEnd: 1400, q: 1.2, gain: 0.18 });
   }
 
+  chute() {
+    if (!this.ok) return;
+    this._noise(0.35, { type: 'bandpass', freq: 300, freqEnd: 1200, q: 0.8, gain: 0.4 });
+    this._noise(0.2, { type: 'highpass', freq: 2000, gain: 0.15, when: 0.08 });
+  }
+
   land() {
     if (!this.ok) return;
     this._noise(0.12, { freq: 400, gain: 0.3 });

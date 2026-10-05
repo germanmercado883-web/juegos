@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { CharacterModel, PALETTES } from '../entities/CharacterModel.js';
+import { SurvivorModel } from '../entities/SurvivorModel.js';
 import { angleDiff, clamp, damp } from '../utils/math.js';
 import { PLAY_LIMIT } from '../world/mapLayout.js';
 
@@ -9,6 +9,7 @@ const WALK = 2.6;
 const GRAVITY = 24;
 
 const STATE = { IDLE: 0, ALERT: 1, DEAD: 2 };
+const CALLSIGNS = ['KESTREL', 'MAKO', 'JUNIPER', 'ROOK', 'VESPER', 'TALON', 'CINDER', 'NOMAD', 'BRINE', 'SABLE'];
 
 /**
  * Rival survivor with a deliberately simple brain:
@@ -20,8 +21,9 @@ export class Enemy {
     this.game = game;
     this.isEnemy = true;
     this.index = index;
+    this.name = CALLSIGNS[index % CALLSIGNS.length];
     this.physics = game.world.physics;
-    this.model = new CharacterModel(PALETTES.rival, index % 3 === 0 ? 'hornet' : 'strider');
+    this.model = new SurvivorModel(['rival', 'rivalB', 'rivalC'][index % 3], index % 3 === 0 ? 'hornet' : 'strider');
     this.root = this.model.root;
     this.pos = new THREE.Vector3(x, this.physics.terrain.groundAt(x, z), z);
     this.home = this.pos.clone();
@@ -54,7 +56,7 @@ export class Enemy {
     bg.renderOrder = 10;
     fill.renderOrder = 11;
     g.add(bg, fill);
-    g.position.y = 2.25;
+    g.position.y = 2.15;
     this.bar = g;
     this.barFill = fill;
     this.root.add(g);
@@ -68,35 +70,41 @@ export class Enemy {
     ];
   }
 
-  takeDamage(amount) {
+  takeDamage(amount, source = 'player') {
     if (!this.alive) return;
     this.health -= amount;
+    if (source === 'zone') {
+      if (this.health <= 0) this.die(false);
+      return;
+    }
     this.state = STATE.ALERT;
     this.lastSeen = this.game.time;
     this.burstTimer = Math.min(this.burstTimer, 0.6);
     if (this.health <= 0) this.die();
   }
 
-  die() {
+  die(byPlayer = true) {
     this.alive = false;
     this.health = 0;
     this.state = STATE.DEAD;
     this.bar.visible = false;
     this.physics.removeTarget(this);
     this.fallDir = Math.random() < 0.5 ? -1 : 1;
-    this.game.onEnemyKilled(this);
+    this.game.onEnemyKilled(this, byPlayer);
   }
 
   update(dt, player) {
     if (this.state === STATE.DEAD) {
       this.deadTime += dt;
       // topple over, then sink into the ground
-      const t = Math.min(1, this.deadTime * 2.2);
-      this.model.body.rotation.x = -t * t * (Math.PI / 2) * 0.98;
+      this.model.die();
+      this.model.animate(dt, {});
       if (this.deadTime > 6) this.root.position.y -= dt * 0.6;
       return this.deadTime < 8.5;
     }
 
+    if (this.game.zone.distanceOutside(this.pos) > 0) this.takeDamage(this.game.zone.dps * dt, 'zone');
+    if (!this.alive) return true;
     const toP = new THREE.Vector3().subVectors(player.pos, this.pos);
     const dist = Math.hypot(toP.x, toP.z);
 
@@ -105,7 +113,7 @@ export class Enemy {
     if (this.seeTimer <= 0) {
       this.seeTimer = 0.25;
       this.canSee = false;
-      if (player.alive && dist < DETECT_RANGE) {
+      if (player.alive && player.phase === 'ground' && dist < DETECT_RANGE) {
         const eye = { x: this.pos.x, y: this.pos.y + 1.6, z: this.pos.z };
         const tgt = { x: player.pos.x, y: player.pos.y + 1.4, z: player.pos.z };
         // facing cone unless very close or already alert
@@ -142,6 +150,13 @@ export class Enemy {
       this._combat(dt, player, dist);
     } else {
       this.wanderTimer -= dt;
+      // head for the next safe circle when outside it
+      const zone = this.game.zone;
+      if (zone.distanceOutsideNext(this.pos) > -4) {
+        const c = zone.next ? zone.next.center : zone.center;
+        this.wanderTarget = new THREE.Vector3(c.x + (Math.random() - 0.5) * 8, 0, c.y + (Math.random() - 0.5) * 8);
+        this.wanderTimer = 4;
+      }
       if (this.wanderTimer <= 0) {
         this.wanderTimer = 3 + Math.random() * 4;
         this.wanderTarget = Math.random() < 0.5
@@ -153,7 +168,7 @@ export class Enemy {
         const d = new THREE.Vector3(this.wanderTarget.x - this.pos.x, 0, this.wanderTarget.z - this.pos.z);
         if (d.length() > 0.8) {
           wish.copy(d.normalize());
-          speed = WALK * 0.6;
+          speed = this.game.zone.distanceOutsideNext(this.pos) > -4 ? WALK * 1.6 : WALK * 0.6;
           desiredYaw = Math.atan2(-d.x, -d.z);
         } else this.wanderTarget = null;
       } else if (this.lookYaw !== undefined) desiredYaw = this.lookYaw;

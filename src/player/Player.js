@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { CharacterModel, PALETTES } from '../entities/CharacterModel.js';
+import { SurvivorModel } from '../entities/SurvivorModel.js';
 import { clamp, damp, angleDiff } from '../utils/math.js';
 import { PLAY_LIMIT } from '../world/mapLayout.js';
 import { PlayerWeapons } from '../weapons/PlayerWeapons.js';
@@ -17,7 +17,7 @@ export class Player {
   constructor(game) {
     this.game = game;
     this.physics = game.world.physics;
-    this.model = new CharacterModel(PALETTES.player, 'strider');
+    this.model = new SurvivorModel('player', 'strider');
     this.root = this.model.root;
     this.pos = new THREE.Vector3();
     this.vel = new THREE.Vector3();
@@ -34,6 +34,8 @@ export class Player {
     this.aiming = false;
     this.lastDamageAt = -10;
     this.weapons = new PlayerWeapons(this);
+    this.crouching = false;
+    this.phase = 'ground'; // 'plane' | 'freefall' | 'chute' | 'ground'
     this._stepTimer = 0;
   }
 
@@ -47,9 +49,10 @@ export class Player {
   /** Collision/hit shapes for enemy bullets. */
   hitShapes() {
     const p = this.pos;
+    const h = this.crouching ? 0.72 : 1;
     return [
-      { type: 'cyl', x: p.x, z: p.z, r: 0.33, minY: p.y, maxY: p.y + 1.45 },
-      { type: 'sphere', x: p.x, y: p.y + 1.68, z: p.z, r: 0.16, head: true },
+      { type: 'cyl', x: p.x, z: p.z, r: 0.33, minY: p.y, maxY: p.y + 1.45 * h },
+      { type: 'sphere', x: p.x, y: p.y + 1.68 * h, z: p.z, r: 0.16, head: true },
     ];
   }
 
@@ -82,7 +85,12 @@ export class Player {
 
   update(dt, input, cam) {
     if (!this.alive) {
-      this.model.body.rotation.x = Math.max(this.model.body.rotation.x - dt * 3, -Math.PI / 2);
+      this.model.die();
+      this.model.animate(dt, {});
+      return;
+    }
+    if (this.phase !== 'ground') {
+      this.game.drop.updatePlayer(dt, input, cam, this);
       return;
     }
 
@@ -90,6 +98,7 @@ export class Player {
     const f = (input.down('KeyW') ? 1 : 0) - (input.down('KeyS') ? 1 : 0);
     const s = (input.down('KeyD') ? 1 : 0) - (input.down('KeyA') ? 1 : 0);
     this.aiming = input.mouse.right && this.weapons.reloading <= 0;
+    if (input.wasPressed('KeyC') || input.wasPressed('ControlLeft')) this.crouching = !this.crouching;
     this.sprinting = input.down('ShiftLeft') || input.down('ShiftRight');
     this.sprinting = this.sprinting && f > 0 && !this.aiming && !input.mouse.left && this.healing <= 0;
 
@@ -99,7 +108,9 @@ export class Player {
     const wish = new THREE.Vector3().addScaledVector(fwd, f).addScaledVector(right, s);
     if (wish.lengthSq() > 0) wish.normalize();
 
+    if (this.sprinting) this.crouching = false;
     let speed = this.sprinting ? SPRINT : this.aiming ? AIM_WALK : WALK;
+    if (this.crouching) speed = Math.min(speed, 2.6);
     if (this.healing > 0) speed = 2.4;
     const accel = this.grounded ? 11 : 2.5;
     const k = damp(accel, dt);
@@ -107,6 +118,7 @@ export class Player {
     this.vel.z += (wish.z * speed - this.vel.z) * k;
 
     if (input.wasPressed('Space') && this.grounded) {
+      this.crouching = false;
       this.vel.y = JUMP_V;
       this.grounded = false;
       this.game.audio.jump();
@@ -168,6 +180,8 @@ export class Player {
       pitch: cam.pitch,
       sprint: this.sprinting,
       aiming: this.aiming,
+      crouch: this.crouching,
+      backwards: f < 0,
     });
   }
 }

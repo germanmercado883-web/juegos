@@ -1,8 +1,18 @@
 # DUSKVALE — Battle Royale Demo
 
 Prototipo jugable de un battle royale **original** con estética low-poly de
-juegos móviles de ~2018–2019. Todo (mapa, personaje, armas, loot, UI y
-sonidos) se genera por código: no hay assets externos.
+juegos móviles de ~2018–2019. El mapa, las armas, el loot, la UI y los sonidos
+se generan por código. El único asset externo es el esqueleto animado de los
+personajes (ver Créditos), vestido con ropa táctica original.
+
+## Novedades v2
+
+- Personajes con esqueleto y animaciones reales (idle, caminar, trotar, sprint,
+  agacharse, saltar, caída libre, muerte) + IK para sostener el arma.
+- Inicio desde avión: salto, caída libre, paracaídas y aterrizaje.
+- Zona segura que se cierra en 4 fases con temporizador y próximo círculo.
+- Kill feed, rivales con nombre y 3 equipos de colores.
+- Post-procesado (bloom suave, saturación, viñeta) en calidad HIGH.
 
 ## Ejecutar
 
@@ -23,7 +33,8 @@ Build de producción: `npm run build`, luego `npm run preview` (puerto 4173).
 |---|---|
 | WASD | Moverse |
 | Shift | Correr |
-| Espacio | Saltar |
+| Espacio | Saltar · en el avión: lanzarse · en caída: abrir paracaídas |
+| C | Agacharse |
 | Mouse | Apuntar (clic en el juego para capturar el mouse) |
 | Clic izquierdo | Disparar |
 | Clic derecho | Apuntar con mira (ADS) |
@@ -61,3 +72,12 @@ src/
 
 En la consola del navegador, `window.__duskvale` expone el objeto del juego
 para depurar.
+
+## Créditos
+
+- Esqueleto y animaciones de personaje: **Universal Animation Library** de
+  [Quaternius](https://quaternius.com) — licencia CC0 1.0
+  (`public/models/LICENSE-survivor-CC0.txt`), obtenido del espejo
+  [J-Ponzo/gltf-universal-animation-library](https://github.com/J-Ponzo/gltf-universal-animation-library).
+  Se recortó a 15 animaciones con glTF-Transform.
+- Motor: [three.js](https://threejs.org) (MIT). Herramienta: [Vite](https://vitejs.dev) (MIT).

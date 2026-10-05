@@ -33,17 +33,18 @@ export class ThirdPersonCamera {
     return out.set(-Math.sin(this.yaw) * cp, Math.sin(this.pitch), -Math.cos(this.yaw) * cp);
   }
 
-  update(dt, input, target, settings, aiming) {
+  update(dt, input, target, settings, aiming, crouching = false) {
     const sens = 0.0022 * settings.sensitivity * (aiming ? 0.6 : 1);
     this.yaw -= input.mouse.dx * sens;
     this.pitch = clamp(this.pitch - input.mouse.dy * sens * (settings.invertY ? -1 : 1), -1.2, 1.1);
-    if (input.mouse.wheel) this.distance = clamp(this.distance + input.mouse.wheel * 0.5, this.minDist, this.maxDist);
+    if (input.mouse.wheel) this.distance = clamp(this.distance + input.mouse.wheel * 0.5, this.minDist, Math.max(this.maxDist, this.distance));
 
     this.aimBlend = lerp(this.aimBlend, aiming ? 1 : 0, damp(14, dt));
 
     // pivot: above the right shoulder
     const right = new THREE.Vector3(Math.cos(this.yaw), 0, -Math.sin(this.yaw));
-    const desiredPivot = new THREE.Vector3(target.x, target.y + 1.62, target.z)
+    this.crouchBlend = lerp(this.crouchBlend || 0, crouching ? 1 : 0, damp(10, dt));
+    const desiredPivot = new THREE.Vector3(target.x, target.y + 1.62 - this.crouchBlend * 0.5, target.z)
       .addScaledVector(right, lerp(0.6, 0.85, this.aimBlend));
     if (this.pivot.lengthSq() === 0) this.pivot.copy(desiredPivot);
     this.pivot.lerp(desiredPivot, damp(22, dt));
