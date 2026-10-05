@@ -117,7 +117,9 @@ export class PlayerWeapons {
       dir.normalize();
       lastDir = dir;
       // start the ray at the player's depth so walls behind the player are ignored
-      const origin = camera.position.clone().addScaledVector(dir, cam.currentDist * 0.9);
+      const head = player.pos.clone().setY(player.pos.y + 1.5);
+      const depth = Math.max(0, head.sub(camera.position).dot(dir) - 0.4);
+      const origin = camera.position.clone().addScaledVector(dir, depth);
       const hit = game.world.physics.raycast(origin, dir, def.range, { ignore: player });
       const end = hit ? new THREE.Vector3(hit.point.x, hit.point.y, hit.point.z) : origin.clone().addScaledVector(dir, def.range);
       if (i < 3) game.effects.tracer(muzzle, end);

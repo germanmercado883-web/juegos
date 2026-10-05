@@ -378,3 +378,6 @@ body.lobby-ready .menu-content { align-items: flex-start; text-align: left; padd
 body.lobby-ready .logo h1 { font-size: clamp(56px, 9vw, 120px); }
 body.lobby-ready .menu-buttons { width: 260px; }
 body.scoped .hud-top, body.scoped .hud-left, body.scoped .hud-right, body.scoped .minimap, body.scoped .killfeed, body.scoped .toasts { opacity: 0; }
+
+.tb-nade { right: 196px; bottom: 228px; color: #c8d6a0; }
+body.no-nades .tb-nade { opacity: 0.35; }

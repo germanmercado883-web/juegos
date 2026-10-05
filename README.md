@@ -5,6 +5,14 @@ juegos móviles de ~2018–2019. El mapa, las armas, el loot, la UI y los sonido
 se generan por código. El único asset externo es el esqueleto animado de los
 personajes (ver Créditos), vestido con ropa táctica original.
 
+## Novedades v4
+
+- Granadas (G / botón G): caen donde apunta la mira, rebotan y explotan.
+- Los rivales pelean entre sí y se cubren detrás de árboles y rocas al quedar heridos.
+- Música procedural en el menú.
+- Despliegue automático a Cloudflare Pages con GitHub Actions
+  (`.github/workflows/deploy-cloudflare.yml`, requiere el secreto `CLOUDFLARE_API_TOKEN`).
+
 ## Novedades v3
 
 - Lobby 3D en el menú con tu personaje animado.

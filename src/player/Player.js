@@ -27,6 +27,7 @@ export class Player {
     this.health = 100;
     this.armor = 0;
     this.medkits = 1;
+    this.grenades = 1;
     this.hasBigPack = false;
     this.healing = 0; // seconds remaining
     this.kills = 0;

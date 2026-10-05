@@ -13,6 +13,7 @@ import { DropSequence } from '../systems/DropSequence.js';
 import { PostFX } from '../systems/PostFX.js';
 import { Airdrop } from '../systems/Airdrop.js';
 import { Lobby } from '../ui/Lobby.js';
+import { Grenades } from '../weapons/Grenades.js';
 import { preloadSurvivor } from '../entities/SurvivorModel.js';
 import { TouchControls, isTouchDevice } from '../ui/TouchControls.js';
 import { angleDiff } from '../utils/math.js';
@@ -108,6 +109,7 @@ export class Game {
       steps.push(['FUELING THE PLANE', () => {
         this.drop = new DropSequence(this);
         this.airdrop = new Airdrop(this);
+        this.grenades = new Grenades(this);
       }]);
       steps.push(['GRADING COLORS', () => {
         this.postfx = new PostFX(this.renderer, this.scene, this.camera);
@@ -166,6 +168,7 @@ export class Game {
 
     this.zone.reset();
     this.airdrop.reset();
+    this.grenades.reset();
     this.zone.onEvent = (e) => {
       if (e === 'shrink') this.hud.toast('THE ZONE IS CLOSING!', 'warn');
       else {
@@ -223,15 +226,19 @@ export class Game {
   }
 
   // ------------------------------------------------------------ events
-  onEnemyKilled(enemy, byPlayer = true) {
+  onEnemyKilled(enemy, killer) {
     this.aliveCount -= 1;
     const remaining = this.aliveCount - 1;
+    const byPlayer = killer === this.player;
     if (byPlayer) {
       this.player.kills += 1;
       this.hud.killBanner(remaining > 0 ? `${remaining} RIVAL${remaining === 1 ? '' : 'S'} LEFT` : 'VALLEY CLEARED');
       this.hud.killFeed('YOU', enemy.name, this.player.weapons.active.def.name);
       this.audio.eliminate();
       this.haptic([20, 40, 30]);
+    } else if (killer && killer.isEnemy) {
+      const gun = { hornet: 'PX-4 HORNET', strider: 'RK-7 STRIDER' }[killer.model.weaponId] || 'RIFLE';
+      this.hud.killFeed(killer.name, enemy.name, gun);
     } else {
       this.hud.killFeed('ZONE', enemy.name, null);
     }
@@ -371,6 +378,9 @@ export class Game {
         }
       }
     }
+    if (input.wasPressed('KeyG') && player.phase === 'ground') {
+      if (!this.grenades.throw(player, this.cam)) this.hud.toast('NO GRENADES', 'warn');
+    }
     if (input.wasPressed('KeyH')) {
       if (!player.startHeal() && player.medkits === 0) this.hud.toast('NO MEDKITS', 'warn');
     }
@@ -390,6 +400,7 @@ export class Game {
     });
     this.loot.update(dt);
     this.airdrop.update(dt);
+    this.grenades.update(dt);
     if (this.zone.running && this._firstDropAt !== null) {
       this._firstDropAt -= dt;
       if (this._firstDropAt <= 0) {

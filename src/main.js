@@ -5,6 +5,14 @@ const settings = loadSettings();
 const ui = new MenuUI(settings);
 const game = new Game(document.getElementById('game'), settings, ui);
 
+// menu music starts on the first tap/click (browsers need a gesture)
+const startMenuMusic = () => {
+  if (game.state !== 'menu') return;
+  game.audio.init();
+  game.audio.startMusic();
+};
+window.addEventListener('pointerdown', startMenuMusic);
+
 let busy = false;
 async function play() {
   if (busy) return;
@@ -21,6 +29,7 @@ async function play() {
       /* ignore */
     }
   }
+  game.audio.stopMusic();
   ui.showLoading();
   try {
     await game.load((p, label) => ui.setProgress(p, label));
@@ -40,6 +49,7 @@ ui.on('resume', () => game.resume());
 ui.on('quit', () => {
   game.quitToMenu();
   ui.show('menu');
+  game.audio.startMusic();
 });
 ui.on('settingsChanged', () => game.applySettings());
 

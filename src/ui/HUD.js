@@ -19,6 +19,7 @@ export class HUD {
       armor: $('hud-armor'),
       armorBar: $('hud-armor-bar'),
       medkits: $('hud-medkits'),
+      grenades: $('hud-grenades'),
       pack: $('hud-pack'),
       weapon: $('hud-weapon'),
       weaponKind: $('hud-weapon-kind'),
@@ -116,6 +117,8 @@ export class HUD {
     this._set('armor', e.armor, String(Math.ceil(p.armor)));
     this._set('armorw', e.armorBar, `${p.armor}%`, 'width');
     this._set('medkits', e.medkits, String(p.medkits));
+    this._set('grenades', e.grenades, String(p.grenades));
+    document.body.classList.toggle('no-nades', p.grenades <= 0);
     this._set('pack', e.pack, p.hasBigPack ? '▣ TREK PACK' : '');
     this._set('weapon', e.weapon, a.def.name);
     this._set('weaponKind', e.weaponKind, a.def.kind);
@@ -263,7 +266,7 @@ export class HUD {
     const row = document.createElement('div');
     row.className = 'kf';
     const k = document.createElement('span');
-    k.className = killer === 'YOU' ? 'you' : 'zone';
+    k.className = killer === 'YOU' ? 'you' : killer === 'ZONE' ? 'zone' : '';
     k.textContent = killer;
     const w = document.createElement('span');
     w.className = 'gun';

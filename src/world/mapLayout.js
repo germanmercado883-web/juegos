@@ -85,4 +85,5 @@ export const LOOT_SPAWNS = [
   ['armor', 46, -96], ['ammo', 9, -6], ['medkit', -12, 20],
   ['ammo', 60, 52], ['shotgun', -24, 100], ['sniper', 24, -108],
   ['shotgun', 92, 10], ['smg', 6, 108], ['rifle', -112, -88], ['ammo', 104, -18],
+  ['grenade', -88, -72], ['grenade', 98, 4], ['grenade', 0, 104], ['grenade', 30, -104], ['grenade', -4, -4],
 ];

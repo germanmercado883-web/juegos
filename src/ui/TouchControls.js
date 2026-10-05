@@ -40,6 +40,7 @@ export class TouchControls {
     this._tap('tb-reload', () => this._press('KeyR'));
     this._tap('tb-pick', () => this._press('KeyE'));
     this._tap('tb-heal', () => this._press('KeyH'));
+    this._tap('tb-nade', () => this._press('KeyG'));
     this._tap('tb-swap', () => this._press('KeyQ'));
     this._tap('tb-pause', () => game.pause());
   }

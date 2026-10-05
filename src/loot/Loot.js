@@ -7,6 +7,7 @@ import { WEAPONS, WEAPON_LOOT } from '../weapons/weaponData.js';
 export const LOOT_TYPES = {
   ammo: { label: 'AMMO BOX', glow: '#f2f0e6' },
   medkit: { label: 'FIELD MEDKIT', glow: '#7be08a' },
+  grenade: { label: 'FRAG GRENADES x2', glow: '#f2f0e6' },
   armor: { label: 'GUARD VEST', glow: '#6fb4ff' },
   backpack: { label: 'TREK PACK', glow: '#c08bff' },
   smg: { label: 'PX-4 HORNET', glow: '#6fb4ff' },
@@ -25,6 +26,13 @@ function buildMesh(type) {
     for (let i = 0; i < 3; i++) {
       const b = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.16, 6), flatMat('#c9a24a'));
       b.position.set(-0.1 + i * 0.1, 0.22, 0);
+      g.add(b);
+    }
+  } else if (type === 'grenade') {
+    for (const x of [-0.1, 0.1]) {
+      const b = new THREE.Mesh(new THREE.IcosahedronGeometry(0.11, 0), flatMat('#4b5a3a'));
+      b.scale.set(1, 1.2, 1);
+      b.position.x = x;
       g.add(b);
     }
   } else if (type === 'medkit') {
@@ -149,6 +157,11 @@ export class LootManager {
         msg = `+${add} AMMO`;
         break;
       }
+      case 'grenade':
+        if (player.grenades >= 4) return 'GRENADES FULL';
+        player.grenades = Math.min(4, player.grenades + 2);
+        msg = `+2 GRENADES (${player.grenades})`;
+        break;
       case 'medkit':
         if (player.medkits >= 5) return 'MEDKITS FULL';
         player.medkits += 1;

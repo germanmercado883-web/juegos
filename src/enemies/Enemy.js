@@ -5,6 +5,7 @@ import { PLAY_LIMIT } from '../world/mapLayout.js';
 
 const DETECT_RANGE = 58;
 const KEEP_DISTANCE = 16;
+const RIVAL_RANGE = 38;
 const WALK = 2.6;
 const GRAVITY = 24;
 
@@ -70,28 +71,88 @@ export class Enemy {
     ];
   }
 
-  takeDamage(amount, source = 'player') {
+  /** source: the player, another Enemy, or 'zone'. */
+  takeDamage(amount, source = 'zone') {
     if (!this.alive) return;
     this.health -= amount;
     if (source === 'zone') {
-      if (this.health <= 0) this.die(false);
+      if (this.health <= 0) this.die('zone');
       return;
     }
+    // retaliate against whoever shot us
+    if (source && source.alive) this.target = source;
     this.state = STATE.ALERT;
     this.model.flinch = 1;
     this.lastSeen = this.game.time;
     this.burstTimer = Math.min(this.burstTimer, 0.6);
-    if (this.health <= 0) this.die();
+    if (this.health <= 0) this.die(source);
   }
 
-  die(byPlayer = true) {
+  die(killer) {
     this.alive = false;
     this.health = 0;
     this.state = STATE.DEAD;
     this.bar.visible = false;
     this.physics.removeTarget(this);
-    this.fallDir = Math.random() < 0.5 ? -1 : 1;
-    this.game.onEnemyKilled(this, byPlayer);
+    this.game.onEnemyKilled(this, killer);
+  }
+
+  /** Can we see this character from our eyes? */
+  _sees(other) {
+    const eye = { x: this.pos.x, y: this.pos.y + 1.6, z: this.pos.z };
+    const tgt = { x: other.pos.x, y: other.pos.y + 1.4, z: other.pos.z };
+    return this.physics.lineOfSight(eye, tgt);
+  }
+
+  /** Pick who to fight: the player when visible, otherwise a nearby rival. */
+  _perceive(player) {
+    this.canSee = false;
+    const candidates = [];
+    if (player.alive && player.phase === 'ground') candidates.push(player);
+    for (const e of this.game.enemies) {
+      if (e !== this && e.alive && Math.hypot(e.pos.x - this.pos.x, e.pos.z - this.pos.z) < RIVAL_RANGE) candidates.push(e);
+    }
+    // keep the current target while it stays valid
+    if (this.target && this.target.alive && candidates.includes(this.target)) {
+      candidates.splice(candidates.indexOf(this.target), 1);
+      candidates.unshift(this.target);
+    }
+    for (const c of candidates) {
+      const dx = c.pos.x - this.pos.x;
+      const dz = c.pos.z - this.pos.z;
+      const dist = Math.hypot(dx, dz);
+      const range = c === player ? DETECT_RANGE : RIVAL_RANGE;
+      if (dist > range) continue;
+      const toYaw = Math.atan2(-dx, -dz);
+      const inCone = Math.abs(angleDiff(this.facing, toYaw)) < 1.4 || dist < 14 || (this.state === STATE.ALERT && c === this.target);
+      if (inCone && this._sees(c)) {
+        this.target = c;
+        this.canSee = true;
+        this.lastSeen = this.game.time;
+        if (this.state !== STATE.ALERT) {
+          this.state = STATE.ALERT;
+          this.burstTimer = 0.9 + Math.random() * 0.8; // reaction time
+        }
+        return;
+      }
+    }
+  }
+
+  /** Nearest tree/rock to hide behind, on the far side from the threat. */
+  _findCover(threat) {
+    let best = null;
+    let bd = 20;
+    for (const c of this.physics.cylinders) {
+      if (c.tag !== 'tree' && c.tag !== 'rock') continue;
+      const d = Math.hypot(c.x - this.pos.x, c.z - this.pos.z);
+      if (d > bd) continue;
+      const ax = c.x - threat.pos.x;
+      const az = c.z - threat.pos.z;
+      const al = Math.hypot(ax, az) || 1;
+      best = new THREE.Vector3(c.x + (ax / al) * (c.r + 0.9), 0, c.z + (az / al) * (c.r + 0.9));
+      bd = d;
+    }
+    return best;
   }
 
   update(dt, player) {
@@ -106,40 +167,41 @@ export class Enemy {
 
     if (this.game.zone.distanceOutside(this.pos) > 0) this.takeDamage(this.game.zone.dps * dt, 'zone');
     if (!this.alive) return true;
-    const toP = new THREE.Vector3().subVectors(player.pos, this.pos);
-    const dist = Math.hypot(toP.x, toP.z);
-
     // perception, throttled
     this.seeTimer -= dt;
     if (this.seeTimer <= 0) {
-      this.seeTimer = 0.25;
-      this.canSee = false;
-      if (player.alive && player.phase === 'ground' && dist < DETECT_RANGE) {
-        const eye = { x: this.pos.x, y: this.pos.y + 1.6, z: this.pos.z };
-        const tgt = { x: player.pos.x, y: player.pos.y + 1.4, z: player.pos.z };
-        // facing cone unless very close or already alert
-        const toYaw = Math.atan2(-toP.x, -toP.z);
-        const inCone = Math.abs(angleDiff(this.facing, toYaw)) < 1.4 || dist < 14 || this.state === STATE.ALERT;
-        if (inCone && this.physics.lineOfSight(eye, tgt)) {
-          this.canSee = true;
-          this.lastSeen = this.game.time;
-          if (this.state !== STATE.ALERT) {
-            this.state = STATE.ALERT;
-            this.burstTimer = 0.9 + Math.random() * 0.8; // reaction time
-          }
-        }
+      this.seeTimer = 0.3;
+      this._perceive(player);
+      if (this.state === STATE.ALERT && (this.game.time - this.lastSeen > 7 || !this.target?.alive)) {
+        this.state = STATE.IDLE;
+        this.target = null;
       }
-      if (this.state === STATE.ALERT && this.game.time - this.lastSeen > 7) this.state = STATE.IDLE;
     }
 
     let wish = new THREE.Vector3();
     let desiredYaw = this.facing;
     let speed = 0;
+    const tgt = this.target;
+    const toP = tgt ? new THREE.Vector3().subVectors(tgt.pos, this.pos) : new THREE.Vector3();
+    const dist = Math.hypot(toP.x, toP.z);
 
-    if (this.state === STATE.ALERT && player.alive) {
+    if (this.state === STATE.ALERT && tgt && tgt.alive) {
       desiredYaw = Math.atan2(-toP.x, -toP.z);
       const dir = new THREE.Vector3(toP.x, 0, toP.z).normalize();
-      if (dist > KEEP_DISTANCE || !this.canSee) {
+      // hurt: break line of sight behind a tree or rock for a while
+      if (this.health < 45 && !this.coverUsed) {
+        this.cover = this._findCover(tgt);
+        this.coverUsed = true;
+        this.coverTime = 4;
+      }
+      if (this.cover && this.coverTime > 0) {
+        this.coverTime -= dt;
+        const d = new THREE.Vector3(this.cover.x - this.pos.x, 0, this.cover.z - this.pos.z);
+        if (d.length() > 0.6) {
+          wish.copy(d.normalize());
+          speed = WALK * 1.5;
+        }
+      } else if (dist > KEEP_DISTANCE || !this.canSee) {
         wish.copy(dir);
         speed = WALK;
       } else {
@@ -148,7 +210,7 @@ export class Enemy {
         speed = WALK * 0.5;
         if (Math.random() < dt * 0.3) this.strafeDir *= -1;
       }
-      this._combat(dt, player, dist);
+      this._combat(dt, tgt, dist);
     } else {
       this.wanderTimer -= dt;
       // head for the next safe circle when outside it
@@ -194,7 +256,7 @@ export class Enemy {
     this.root.rotation.y = this.facing;
     // aim pitch towards the player when alert
     let pitch = 0;
-    if (this.state === STATE.ALERT) pitch = clamp(Math.atan2(player.pos.y - this.pos.y, dist), -0.6, 0.6);
+    if (this.state === STATE.ALERT && tgt) pitch = clamp(Math.atan2(tgt.pos.y - this.pos.y, dist), -0.6, 0.6);
     this.model.animate(dt, { speed: Math.hypot(this.vel.x, this.vel.z), grounded: true, pitch, aiming: this.state === STATE.ALERT });
 
     // health bar faces the camera
@@ -221,11 +283,12 @@ export class Enemy {
     }
   }
 
-  _shoot(player, dist) {
+  _shoot(victim, dist) {
     const game = this.game;
+    const player = game.player;
     const muzzle = this.model.muzzleWorld(new THREE.Vector3());
-    const target = new THREE.Vector3(player.pos.x, player.pos.y + 1.2, player.pos.z);
-    const pSpeed = Math.hypot(player.vel.x, player.vel.z);
+    const target = new THREE.Vector3(victim.pos.x, victim.pos.y + 1.2, victim.pos.z);
+    const pSpeed = Math.hypot(victim.vel.x, victim.vel.z);
     let chance = 0.5 - dist / 140 - pSpeed * 0.025;
     chance = clamp(chance, 0.07, 0.45);
     const hits = Math.random() < chance;
@@ -238,11 +301,15 @@ export class Enemy {
     const dir = target.clone().sub(muzzle).normalize();
     game.effects.muzzleFlash(muzzle, dir, false);
     game.effects.tracer(muzzle, target, '#ffb27a');
-    game.audio.enemyShot(dist);
-    if (hits) {
-      player.takeDamage(this.model.weaponId === 'hornet' ? 6 : 8);
+    const hearDist = Math.hypot(player.pos.x - this.pos.x, player.pos.z - this.pos.z);
+    if (hearDist < 160) game.audio.enemyShot(hearDist);
+    const dmg = this.model.weaponId === 'hornet' ? 6 : 8;
+    if (hits && victim === player) {
+      player.takeDamage(dmg);
       game.hud.damageFrom(this.pos);
       game.audio.hurt();
+    } else if (hits) {
+      victim.takeDamage(dmg * 1.3, this);
     } else if (dist < 25) {
       game.effects.impact(target, 'dirt');
     }

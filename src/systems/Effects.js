@@ -90,11 +90,40 @@ export class Effects {
     }
   }
 
+  explosion(p) {
+    const f = this.flashes[this._fi++ % this.flashes.length];
+    f.s.position.set(p.x, p.y + 0.6, p.z);
+    f.s.scale.setScalar(7);
+    f.s.material.rotation = Math.random() * Math.PI;
+    f.s.visible = true;
+    f.t = 0.12;
+    this.flashLight.position.set(p.x, p.y + 1, p.z);
+    this.flashLight.intensity = 40;
+    this.flashLight.distance = 25;
+    this.flashLightT = 0.12;
+    const cols = ['#ffb347', '#ff7a3c', '#ffe08a', '#5a5550', '#7a7068'];
+    for (let i = 0; i < 40; i++) {
+      const q = this.particles[this._pi++ % this.particles.length];
+      q.m.position.set(p.x, p.y + 0.3, p.z);
+      const a = Math.random() * Math.PI * 2;
+      const sp = 4 + Math.random() * 9;
+      q.v.set(Math.cos(a) * sp, Math.random() * 10 + 2, Math.sin(a) * sp);
+      q.m.material.color.set(cols[i % cols.length]);
+      q.m.material.opacity = 1;
+      q.life = q.t = 0.6 + Math.random() * 0.6;
+      q.m.scale.setScalar(1.5 + Math.random() * 2.5);
+      q.m.visible = true;
+    }
+  }
+
   update(dt) {
     for (const f of this.flashes) {
       if (f.t > 0 && (f.t -= dt) <= 0) f.s.visible = false;
     }
-    if (this.flashLightT > 0 && (this.flashLightT -= dt) <= 0) this.flashLight.intensity = 0;
+    if (this.flashLightT > 0 && (this.flashLightT -= dt) <= 0) {
+      this.flashLight.intensity = 0;
+      this.flashLight.distance = 9;
+    }
     for (const tr of this.tracers) {
       if (tr.t > 0) {
         tr.t -= dt;

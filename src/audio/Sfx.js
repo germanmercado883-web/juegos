@@ -149,6 +149,13 @@ export class Sfx {
     this._noise(0.18, { type: 'bandpass', freq: 500, freqEnd: 1400, q: 1.2, gain: 0.18 });
   }
 
+  explosion() {
+    if (!this.ok) return;
+    this._noise(1.1, { freq: 900, freqEnd: 60, gain: 0.9, wet: true });
+    this._tone(70, 0.6, { type: 'sine', freqEnd: 28, gain: 0.8, wet: true });
+    this._noise(0.25, { type: 'highpass', freq: 1800, gain: 0.3 });
+  }
+
   chute() {
     if (!this.ok) return;
     this._noise(0.35, { type: 'bandpass', freq: 300, freqEnd: 1200, q: 0.8, gain: 0.4 });
@@ -183,6 +190,85 @@ export class Sfx {
   defeat() {
     if (!this.ok) return;
     [392, 330, 262, 196].forEach((f, i) => this._tone(f, 0.4, { type: 'sine', gain: 0.22, when: i * 0.16 }));
+  }
+
+  /**
+   * Menu theme: a slow Am-F-C-G progression with a plucked arpeggio and a
+   * soft kick, scheduled a little ahead of time with the audio clock.
+   */
+  startMusic() {
+    if (!this.ok || this.music) return;
+    const c = this.ctx;
+    const bus = c.createGain();
+    bus.gain.value = 0;
+    bus.gain.linearRampToValueAtTime(0.5, c.currentTime + 2);
+    bus.connect(this.master);
+    if (this.wet) bus.connect(this.wet);
+    const chords = [
+      [57, 60, 64], // Am
+      [53, 57, 60], // F
+      [48, 52, 55], // C
+      [55, 59, 62], // G
+    ];
+    const hz = (m) => 440 * Math.pow(2, (m - 69) / 12);
+    const beat = 60 / 92;
+    let step = 0;
+    let next = c.currentTime + 0.1;
+    const note = (freq, t, dur, type, gain, cutoff) => {
+      const o = c.createOscillator();
+      o.type = type;
+      o.frequency.value = freq;
+      const f = c.createBiquadFilter();
+      f.type = 'lowpass';
+      f.frequency.value = cutoff;
+      const g = c.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(gain, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(f).connect(g).connect(bus);
+      o.start(t);
+      o.stop(t + dur + 0.05);
+    };
+    const tick = () => {
+      while (next < c.currentTime + 0.4) {
+        const bar = Math.floor(step / 8) % 4;
+        const chord = chords[bar];
+        const s = step % 8;
+        if (s === 0) {
+          for (const m of chord) note(hz(m - 12), next, beat * 4.2, 'triangle', 0.07, 900);
+          note(hz(chord[0] - 24), next, beat * 4, 'sine', 0.12, 400);
+        }
+        // arpeggio up and down
+        const arp = [0, 1, 2, 1, 0, 1, 2, 1][s];
+        note(hz(chord[arp] + 12), next, beat * 0.45, 'square', 0.025, 2400);
+        if (s % 4 === 0) {
+          const o = c.createOscillator();
+          const g = c.createGain();
+          o.frequency.setValueAtTime(120, next);
+          o.frequency.exponentialRampToValueAtTime(40, next + 0.15);
+          g.gain.setValueAtTime(0.25, next);
+          g.gain.exponentialRampToValueAtTime(0.0001, next + 0.2);
+          o.connect(g).connect(bus);
+          o.start(next);
+          o.stop(next + 0.25);
+        }
+        next += beat / 2;
+        step++;
+      }
+    };
+    tick();
+    this.music = { bus, timer: setInterval(tick, 120) };
+  }
+
+  stopMusic() {
+    if (!this.music) return;
+    const { bus, timer } = this.music;
+    clearInterval(timer);
+    bus.gain.cancelScheduledValues(this.ctx.currentTime);
+    bus.gain.setValueAtTime(bus.gain.value, this.ctx.currentTime);
+    bus.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.8);
+    setTimeout(() => bus.disconnect(), 1000);
+    this.music = null;
   }
 
   /** Soft looping wind bed for atmosphere. */

@@ -114,6 +114,7 @@ export class Airdrop {
         loot.spawn('armor', d.x - 1.4, d.z);
         loot.spawn('medkit', d.x, d.z + 1.4);
         loot.spawn('ammo', d.x, d.z - 1.4);
+        loot.spawn('grenade', d.x + 1, d.z + 1);
         d.crate.children.forEach((c) => {
           if (c.userData.lid) c.visible = false;
         });
